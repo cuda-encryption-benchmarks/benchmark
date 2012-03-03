@@ -4,6 +4,7 @@ libraries = -lccc
 
 files =	main \
 	block128 \
+	file \
 	serpent
 
 # Version information.

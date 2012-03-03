@@ -5,6 +5,7 @@
 
 #include "block128.h"
 #include "ccc/ccc.h"
+#include "file.h"
 #include "serpent.h"
 
 
@@ -55,11 +56,13 @@ exception_t* arguments_validate(int argc, char* argv[]) {
 int main( int argc, char* argv[] ) {
 	//char* function_name = "main()";
 	exception_t* exception;
-	block128* input_blocks;
-	block128* user_key;
-	int block_count;
-	int ifd;
-	int ofd;
+	block128* blocks;
+	//block128* user_key;
+	long long block_count;
+	int blocks_read;
+	//int ifd;
+	//int ofd;
+	file_t file;
 
 	// Validate the arguments.
 	exception = arguments_validate(argc, argv);
@@ -68,6 +71,65 @@ int main( int argc, char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
+	// Open input file.
+	exception = file_init(argv[2], UNENCRYPTED, &file);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Get number of blocks in file.
+	exception = file_get_block_count(&file, &block_count);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Read data from file.
+	exception = file_read(&file, 0, block_count, &blocks, &blocks_read);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Modify data.
+	for ( int i = 0; i < block_count; i++ ) {
+		blocks[i].x0 =~ blocks[i].x0;
+		blocks[i].x1 =~ blocks[i].x1;
+		blocks[i].x2 =~ blocks[i].x2;
+		blocks[i].x3 =~ blocks[i].x3;
+	}
+
+	// Write data to file.
+	exception = file_write(&file, 0, block_count, blocks, &blocks_read);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Close input file.
+	exception = file_free(&file);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	/*
+	// Open input file.
+	exception = file_init(argv[2], ENCRYPTED, &file);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Close input file.
+	exception = file_free(&file);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	} */
+
+	/*
 	// Open input file.
 	ifd = open(argv[2], O_RDONLY);
 	if ( ifd == -1 ) {
@@ -116,7 +178,7 @@ int main( int argc, char* argv[] ) {
 	if ( ofd == -1 ) {
 		perror("Closing output file failed.\n");
 		exit(EXIT_FAILURE);
-	}
+	} */
 
 	// Return success.
 	exit(EXIT_SUCCESS);
