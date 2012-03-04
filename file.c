@@ -269,6 +269,9 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 		blocks_written_local++;
 	}
 
+	// Free the written blocks.
+	free(blocks);
+
 	// Set output parameters.
 	(*blocks_written) = blocks_written_local;
 
