@@ -6,6 +6,7 @@
 #include "block128.h"
 #include "ccc/ccc.h"
 #include "file.h"
+#include "mirror_bytes.h"
 #include "serpent.h"
 
 
@@ -56,14 +57,40 @@ exception_t* arguments_validate(int argc, char* argv[]) {
 int main( int argc, char* argv[] ) {
 	//char* function_name = "main()";
 	exception_t* exception;
-	block128* blocks;
+	//block128* blocks;
 	//block128* user_key;
-	long long block_count;
-	int blocks_read;
-	//int ifd;
-	//int ofd;
-	file_t file;
+	//long long block_count;
+	//int blocks_read;
+	//file_t file;
 
+	uint32 in = 0xdeadbeef;
+	uint32 out; // in, out, in, out, in, out... *guitar solo*
+
+	// Print input
+	fprintf(stdout, "Input: %X.\n", in);
+
+	// Mirror 1
+	exception = mirror_bytes32(in, &out);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Print output.
+	fprintf(stdout, "Output: %X.\n", out);
+
+	// Mirror 2
+	exception = mirror_bytes32(out, &out);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	// Print input/output.
+	fprintf(stdout, "Input again: %X.\n", out);
+
+
+	/*
 	// Validate the arguments.
 	exception = arguments_validate(argc, argv);
 	if ( exception != NULL ) {
@@ -111,72 +138,6 @@ int main( int argc, char* argv[] ) {
 	exception = file_free(&file);
 	if ( exception != NULL ) {
 		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	/*
-	// Open input file.
-	exception = file_init(argv[2], ENCRYPTED, &file);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Close input file.
-	exception = file_free(&file);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	} */
-
-	/*
-	// Open input file.
-	ifd = open(argv[2], O_RDONLY);
-	if ( ifd == -1 ) {
-		perror("Opening input file failed.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// Open output file.
-	ofd = open(argv[3], O_CREAT | O_TRUNC | O_WRONLY , 0700);
-	if ( ofd == -1 ) {
-		perror("Opening output file failed.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// Read input file.
-	exception = block128_read_file(ifd, &input_blocks, &block_count);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Encrypt input file.
-	user_key = NULL;
-	exception = serpent_encrypt_serial(user_key, input_blocks, block_count);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Write output file.
-	exception = block128_write_file(ofd, input_blocks, block_count);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Close input file.
-	ifd = close(ifd);
-	if ( ifd == -1 ) {
-		perror("Closing input file failed.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// Close output file.
-	ofd = close(ofd);
-	if ( ofd == -1 ) {
-		perror("Closing output file failed.\n");
 		exit(EXIT_FAILURE);
 	} */
 

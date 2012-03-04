@@ -5,6 +5,7 @@ libraries = -lccc
 files =	main \
 	block128 \
 	file \
+	mirror_bytes \
 	serpent
 
 # Version information.
