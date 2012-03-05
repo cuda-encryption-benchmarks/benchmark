@@ -57,46 +57,28 @@ exception_t* arguments_validate(int argc, char* argv[]) {
 int main( int argc, char* argv[] ) {
 	//char* function_name = "main()";
 	exception_t* exception;
-	//block128* blocks;
-	//block128* user_key;
-	//long long block_count;
-	//int blocks_read;
-	//file_t file;
+	block128* blocks;
+	serpent_key key;
+	long long block_count;
+	int blocks_read;
+	file_t file;
 
-	uint32 in = 0xdeadbeef;
-	uint32 out; // in, out, in, out, in, out... *guitar solo*
-
-	// Print input
-	fprintf(stdout, "Input: %X.\n", in);
-
-	// Mirror 1
-	exception = mirror_bytes32(in, &out);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Print output.
-	fprintf(stdout, "Output: %X.\n", out);
-
-	// Mirror 2
-	exception = mirror_bytes32(out, &out);
-	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
-	}
-
-	// Print input/output.
-	fprintf(stdout, "Input again: %X.\n", out);
-
-
-	/*
 	// Validate the arguments.
 	exception = arguments_validate(argc, argv);
 	if ( exception != NULL ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
 	}
+
+	// Manually set the key.
+	key.key0.x0 = 0xdeadbeef;
+	key.key0.x1 = 0xdeadbeef;
+	key.key0.x2 = 0xdeadbeef;
+	key.key0.x3 = 0xdeadbeef;
+	key.key1.x0 = 0xdeadbeef;
+	key.key1.x1 = 0xdeadbeef;
+	key.key1.x2 = 0xdeadbeef;
+	key.key1.x3 = 0xdeadbeef;
 
 	// Open input file.
 	exception = file_init(argv[2], UNENCRYPTED, &file);
@@ -119,13 +101,20 @@ int main( int argc, char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Modify data.
+	// Call Serrrrrpent.
+	exception = serpent_encrypt_serial(&key, blocks, block_count);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	/*// Modify data.
 	for ( int i = 0; i < block_count; i++ ) {
 		blocks[i].x0 =~ blocks[i].x0;
 		blocks[i].x1 =~ blocks[i].x1;
 		blocks[i].x2 =~ blocks[i].x2;
 		blocks[i].x3 =~ blocks[i].x3;
-	}
+	} */
 
 	// Write data to file.
 	exception = file_write(&file, 0, block_count, blocks, &blocks_read);
@@ -139,7 +128,7 @@ int main( int argc, char* argv[] ) {
 	if ( exception != NULL ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
-	} */
+	}
 
 	// Return success.
 	exit(EXIT_SUCCESS);
