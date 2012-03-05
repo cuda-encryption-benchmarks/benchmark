@@ -81,7 +81,7 @@ int main( int argc, char* argv[] ) {
 	key.key1.x3 = 0xdeadbeef;
 
 	// Open input file.
-	exception = file_init(argv[2], UNENCRYPTED, &file);
+	exception = file_init(argv[2], ENCRYPTED, &file);
 	if ( exception != NULL ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
@@ -102,7 +102,7 @@ int main( int argc, char* argv[] ) {
 	}
 
 	// Call Serrrrrpent.
-	exception = serpent_encrypt_serial(&key, blocks, block_count);
+	exception = serpent_decrypt_serial(&key, blocks, block_count);
 	if ( exception != NULL ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
