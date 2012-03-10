@@ -1,2 +1,2 @@
 #!/bin/bash
-./benchmark MODE input.txt output.txt
+./benchmark serpent serial encrypt input.txt

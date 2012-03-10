@@ -5,6 +5,7 @@
 #include "block128.h"
 #include "ccc/ccc.h"
 #include "mirror_bytes.h"
+#include "typedef.h"
 
 
 // Rotate the bits in the specified number x left by the specified number n.
@@ -22,16 +23,46 @@ typedef struct {
 } serpent_key;
 
 
+/**	Run the specified array of 128-but blocks through the Serpent encryption algorithm.
+ *	@return NULL on success, exception_t* on failure.
+ */
+exception_t* serpent(serpent_key* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption);
+
+
+/**	Decrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
+/**	Encrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
+/**	Decrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.
+ *	@return NULL on success, exception_t* on failure.
+ */
+exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
+/**	Encrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.
+ *	@return NULL on success, exception_t* on failure.
+ */
+exception_t* serpent_parallel_encrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
 /**	Decrypt the specified array of 128-bit blocks serially through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent_decrypt_serial(serpent_key* user_key, block128* blocks, int block_count);
+exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int block_count);
 
 
 /**	Encrypt the specified array of 128-bit blocks serially through the Serpent encryption algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_encrypt_serial(serpent_key* user_key, block128* blocks, int block_count);
+exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int block_count);
 
 
 /**	Private function that generates the subkey for the Serpent encryption algorithm.

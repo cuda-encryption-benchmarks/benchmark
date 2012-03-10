@@ -416,8 +416,98 @@
 	d ^= subkey[4 * r + 3];}
 
 
-exception_t* serpent_decrypt_serial(serpent_key* user_key, block128* blocks, int block_count) {
-	char* function_name = "serpent_decrypt_serial()";
+exception_t* serpent(serpent_key* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption) {
+	char* function_name = "serpent()";
+	exception_t* exception;
+
+	// Validate parameters.
+	if ( user_key == NULL ) {
+		return exception_throw("user_key was NULL.", function_name);
+	}
+	if ( blocks == NULL ) {
+		return exception_throw("blocks was NULL.", function_name);
+	}
+
+	// Run the appropirate algorithm.
+	switch(mode) {
+	case CUDA:
+		switch(encryption) {
+		case DECRYPT:
+			exception = serpent_cuda_decrypt(user_key, blocks, block_count);
+			break;
+		case ENCRYPT:
+			exception = serpent_cuda_encrypt(user_key, blocks, block_count);
+			break;
+		default:
+			return exception_throw("Unrecognized encryption parameter for CUDA.", function_name);
+		}
+		break;
+	case PARALLEL:
+		switch(encryption) {
+		case DECRYPT:
+			exception = serpent_parallel_decrypt(user_key, blocks, block_count);
+			break;
+		case ENCRYPT:
+			exception = serpent_parallel_encrypt(user_key, blocks, block_count);
+			break;
+		default:
+			return exception_throw("Unrecognized encryption parameter for parallel.", function_name);
+		}
+		break;
+	case SERIAL:
+		switch(encryption) {
+		case DECRYPT:
+			exception = serpent_serial_decrypt(user_key, blocks, block_count);
+			break;
+		case ENCRYPT:
+			exception = serpent_serial_encrypt(user_key, blocks, block_count);
+			break;
+		default:
+			return exception_throw("Unrecognized encryption parameter for serial.", function_name);
+		}
+		break;
+	default:
+		return exception_throw("Unknown mode.", function_name);
+	}
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_cuda_decrypt()";
+
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_cuda_encrypt()";
+
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_parallel_decrypt()";
+
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+exception_t* serpent_parallel_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_parallel_encrypt()";
+
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_serial_decrypt()";
 	exception_t* exception;
 	uint32* subkey;
 	uint32 a, b, c, d, e;
@@ -516,8 +606,8 @@ exception_t* serpent_decrypt_serial(serpent_key* user_key, block128* blocks, int
 }
 
 
-exception_t* serpent_encrypt_serial(serpent_key* user_key, block128* blocks, int block_count) {
-	char* function_name = "serpent_encrypt_serial()";
+exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+	char* function_name = "serpent_serial_encrypt()";
 	exception_t* exception;
 	uint32* subkey;
 	uint32 a, b, c, d, e;
