@@ -515,9 +515,6 @@ exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int b
 		return exception_append(exception, function_name);
 	}
 
-	// DEBUG
-	return exception_throw("Not finished.", function_name);
-
 	// Return success.
 	return NULL;
 }
