@@ -22,7 +22,6 @@ typedef struct {
 	block128 key1;
 } serpent_key;
 
-
 /**	Run the specified array of 128-but blocks through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
@@ -39,6 +38,15 @@ exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int b
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
+/**	Private inner function to prevent linking errors because nvcc does not like external libraries.
+ *	@return 0 on success, -1 on failure.
+ */
+#ifdef __cplusplus
+extern "C"
+#endif
+int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count);
 
 
 /**	Decrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.

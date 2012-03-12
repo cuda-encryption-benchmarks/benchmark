@@ -1,12 +1,15 @@
-compiler = gcc
-flags = --pedantic-errors -Wall -Werror -std=c99
-libraries = -lccc
+ccompiler = gcc
+cucompiler = nvcc
+linker = gcc
+cflags = --pedantic-errors -Wall -Werror -std=c99
+libraries = -lccc -lcuda -lcudart
 
-files =	main \
-	block128 \
-	file \
-	mirror_bytes \
-	serpent
+cfiles =	main \
+		block128 \
+		file \
+		mirror_bytes \
+		serpent
+cufiles = 	ssserpent # Linker does not like files with the same name. (Super-Serious Serpent).
 
 # Version information.
 major_number = 0
@@ -34,16 +37,20 @@ clean:
 
 # Compile the benchmark.
 compile:
-	@for file in ${files}; do \
-		echo "  Compiling $$file.o."; \
-		${compiler} ${flags} -c $$file.c; \
+	@for file in ${cfiles}; do \
+		echo "  Compiling $$file.c."; \
+		${ccompiler} ${cflags} -c $$file.c; \
+	done
+	@for file in ${cufiles}; do \
+		echo "  Compiling $$file.cu."; \
+		${cucompiler} -c $$file.cu; \
 	done
 
 
 # Create the executable.
 create:
 	@echo "  Creating ${name}."
-	@${compiler} -L./ ${libraries} -o ${name} *.o
+	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib/ ${libraries} -o ${name} *.o
 
 
 # Print the conclusion.
