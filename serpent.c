@@ -480,8 +480,36 @@ exception_t* serpent(serpent_key* user_key, block128* blocks, int block_count, e
 
 exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_cuda_decrypt()";
-	
-	return exception_throw("Not implemented.", function_name);
+	exception_t* exception;
+	uint32* subkey;
+
+	// Validate parameters.
+	if ( user_key == NULL ) {
+		return exception_throw("user_key was NULL.", function_name);
+	}
+	if ( blocks == NULL ) {
+		return exception_throw("blocks was NULL.", function_name);
+	}
+
+	// Initialize the subkey.
+	exception = serpent_init_subkey(user_key, &subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Run the encryption algorithm from a different file.
+	if ( serpent_cuda_decrypt_cu(subkey, blocks, block_count) == -1 ) {
+		return exception_throw("CUDA encryption FAILED.", function_name);
+	}
+
+	// Free the subkey.
+	exception = serpent_free_subkey(subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
 }
 
 

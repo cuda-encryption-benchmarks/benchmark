@@ -12,6 +12,8 @@
 #define rotl_fixed(x, n)   (((x) << (n)) | ((x) >> (32 - (n))))
 // Rotate the bits in the specified number x right by the specified number n.
 #define rotr_fixed(x, n)   (((x) >> (n)) | ((x) << (32 - (n))))
+// Arbitrary amount of memory to subtract from total free memory.
+#define SERPENT_CUDA_MEMORY_BUFFER 500000
 
 
 // Structure to hold key for serpent algorithm.
@@ -39,6 +41,13 @@ exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int b
  */
 exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int block_count);
 
+/**	Private inner function to prevent linking errors because nvcc does not like external libraries.
+ *	@return 0 on success, -1 on failure.
+ */
+#ifdef __cplusplus
+extern "C"
+#endif
+int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count);
 
 /**	Private inner function to prevent linking errors because nvcc does not like external libraries.
  *	@return 0 on success, -1 on failure.

@@ -1,5 +1,6 @@
 benchmark
 .*.swp
+backup.txt
 input.txt
 output.txt
 libccc.so
