@@ -2,6 +2,8 @@
 #define serpent_H
 
 
+#include <omp.h>
+
 #include "block128.h"
 #include "ccc/ccc.h"
 #include "mirror_bytes.h"
@@ -62,6 +64,18 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count);
  *	@return NULL on success, exception_t* on failure.
  */
 exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, int block_count);
+
+
+/**	Private function to decrypt a single block of serpent.
+ *	@return	NULL on success, exception_t* on failure. 
+ */
+exception_t* serpent_decrypt_block(block128* block, uint32* subkey);
+
+
+/**	Private function to encrypt a single block of serpent.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* serpent_encrypt_block(block128* block, uint32* subkey);
 
 
 /**	Encrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.

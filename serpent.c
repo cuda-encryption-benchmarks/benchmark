@@ -548,17 +548,261 @@ exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int b
 }
 
 
+exception_t* serpent_decrypt_block(block128* block, uint32* subkey) {
+	char* function_name = "serpent_decrypt_block()";
+	exception_t* exception;
+	uint32 a, b, c, d, e;
+	int j;
+
+	// Change to little endian.
+	exception = mirror_bytes32(block->x0, &a);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x1, &b);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x2, &c);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x3, &d);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Decrypt the current block.
+	j = 4;
+	subkey += 96;
+	beforeI7(KX);
+	goto start;
+	do
+	{
+		c = b;
+		b = d;
+		d = e;
+		subkey -= 32;
+		beforeI7(inverse_linear_transformation);
+	start:
+		beforeI7(I7); afterI7(KX);
+		afterI7(inverse_linear_transformation); afterI7(I6); afterI6(KX);
+		afterI6(inverse_linear_transformation); afterI6(I5); afterI5(KX);
+		afterI5(inverse_linear_transformation); afterI5(I4); afterI4(KX);
+		afterI4(inverse_linear_transformation); afterI4(I3); afterI3(KX);
+		afterI3(inverse_linear_transformation); afterI3(I2); afterI2(KX);
+		afterI2(inverse_linear_transformation); afterI2(I1); afterI1(KX);
+		afterI1(inverse_linear_transformation); afterI1(I0); afterI0(KX);
+	}
+	while (--j != 0);
+
+	// Restore to big endian, taking into account the significance of each block.
+	exception = mirror_bytes32(a, &(block->x0));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(d, &(block->x1));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(b, &(block->x2));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(e, &(block->x3));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* serpent_encrypt_block(block128* block, uint32* subkey) {
+	char* function_name = "serpent_encrypt_block()";
+	exception_t* exception;
+	uint32 a, b, c, d, e;
+	int j;
+
+	// Change to little endian.
+	exception = mirror_bytes32(block->x0, &a);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x1, &b);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x2, &c);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(block->x3, &d);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Do the actual encryption.
+	j = 1;
+	do {
+		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
+		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
+		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
+		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
+		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
+		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
+		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
+		afterS6(KX); afterS6(S7);
+
+		if (j == 4)
+			break;
+
+		++j;
+		c = b;
+		b = e;
+		e = d;
+		d = a;
+		a = e;
+		subkey += 32;
+		beforeS0(linear_transformation);
+	} while (1);
+	afterS7(KX);
+
+	// Restore to big endian.
+	exception = mirror_bytes32(d, &(block->x0));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(e, &(block->x1));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(b, &(block->x2));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = mirror_bytes32(a, &(block->x3));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
 exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_parallel_decrypt()";
+	exception_t* exception;
+	uint32* subkey;
+	int blocks_per_thread;
+	int thread_count;
+	int thread_index;
 
-	return exception_throw("Not implemented.", function_name);
+	// Validate parameters.
+	if ( user_key == NULL ) {
+		return exception_throw("user_key was NULL.", function_name);
+	}
+	if ( blocks == NULL ) {
+		return exception_throw("blocks was NULL.", function_name);
+	}
+
+	// Initialize the subkey.
+	exception = serpent_init_subkey(user_key, &subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Decrypt each block.
+	#pragma omp parallel shared(blocks, subkey, block_count, thread_count, thread_index, blocks_per_thread)
+	{
+		#if defined (_OPENMP)
+			thread_count = omp_get_num_threads();
+			thread_index = omp_get_thread_num();
+		#endif
+
+		// Calculate the current index.
+		int index = thread_index;
+		
+		// Encrypted the minimal number of blocks.
+		blocks_per_thread = block_count / thread_count;
+		for ( int i = 0; i < blocks_per_thread; i++ ) {
+			serpent_decrypt_block(&(blocks[index]), subkey);
+			index += thread_count;
+		}
+
+		// Encrypt the extra blocks that fall outside the minimal number of block.s
+		if ( index < block_count ) {
+			serpent_decrypt_block(&(blocks[index]), subkey);
+		}
+	} 
+
+	// Free the subkey.
+	exception = serpent_free_subkey(subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return. 
+	return NULL;
 }
 
 
 exception_t* serpent_parallel_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_parallel_encrypt()";
+	exception_t* exception;
+	uint32* subkey;
+	int blocks_per_thread;
+	int thread_count;
+	int thread_index;
 
-	return exception_throw("Not implemented.", function_name);
+	// Validate parameters.
+	if ( user_key == NULL ) {
+		return exception_throw("user_key was NULL.", function_name);
+	}
+	if ( blocks == NULL ) {
+		return exception_throw("blocks was NULL.", function_name);
+	}
+
+	// Initialize the subkey.
+	exception = serpent_init_subkey(user_key, &subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Encrypt each block.
+	#pragma omp parallel shared(blocks, subkey, block_count, thread_count, thread_index, blocks_per_thread)
+	{
+		#if defined (_OPENMP)
+			thread_count = omp_get_num_threads();
+			thread_index = omp_get_thread_num();
+		#endif
+
+		// Calculate the current index.
+		int index = thread_index;
+		
+		// Encrypted the minimal number of blocks.
+		blocks_per_thread = block_count / thread_count;
+		for ( int i = 0; i < blocks_per_thread; i++ ) {
+			serpent_encrypt_block(&(blocks[index]), subkey);
+			index += thread_count;
+		}
+
+		// Encrypt the extra blocks that fall outside the minimal number of block.s
+		if ( index < block_count ) {
+			serpent_encrypt_block(&(blocks[index]), subkey);
+		}
+	} 
+
+	// Free the subkey.
+	exception = serpent_free_subkey(subkey);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return. 
+	return NULL;
 }
 
 
@@ -566,7 +810,7 @@ exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int
 	char* function_name = "serpent_serial_decrypt()";
 	exception_t* exception;
 	uint32* subkey;
-	uint32 a, b, c, d, e;
+	//uint32 a, b, c, d, e;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -584,71 +828,10 @@ exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int
 
 	// Decrypt each block.
 	for ( int i = 0; i < block_count; i++ ) {
-		block128* current_block;
-		int j;
-
-		// Get the current block.
-		current_block = &(blocks[i]);
-
-		// Change to little endian.
-		exception = mirror_bytes32(current_block->x0, &a);
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes to a.", function_name);
-                }
-                exception = mirror_bytes32(current_block->x1, &b);
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes to b.", function_name);
-                }
-                exception = mirror_bytes32(current_block->x2, &c);
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes to c.", function_name);
-                }
-                exception = mirror_bytes32(current_block->x3, &d);
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes to d.", function_name);
-                }
-
-		// Decrypt the current block.
-		j = 4;
-		subkey += 96;
-		beforeI7(KX);
-		goto start;
-		do
-		{
-			c = b;
-			b = d;
-			d = e;
-			subkey -= 32;
-			beforeI7(inverse_linear_transformation);
-		start:
-			beforeI7(I7); afterI7(KX);
-			afterI7(inverse_linear_transformation); afterI7(I6); afterI6(KX);
-			afterI6(inverse_linear_transformation); afterI6(I5); afterI5(KX);
-			afterI5(inverse_linear_transformation); afterI5(I4); afterI4(KX);
-			afterI4(inverse_linear_transformation); afterI4(I3); afterI3(KX);
-			afterI3(inverse_linear_transformation); afterI3(I2); afterI2(KX);
-			afterI2(inverse_linear_transformation); afterI2(I1); afterI1(KX);
-			afterI1(inverse_linear_transformation); afterI1(I0); afterI0(KX);
+		exception = serpent_decrypt_block(&(blocks[i]), subkey);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
 		}
-		while (--j != 0);
-
-		// Restore to big endian, taking into account the significance of each block.
-                exception = mirror_bytes32(a, &(current_block->x0));
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes from a.", function_name);
-                }
-                exception = mirror_bytes32(d, &(current_block->x1));
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes from d.", function_name);
-                }
-                exception = mirror_bytes32(b, &(current_block->x2));
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes from b.", function_name);
-                }
-                exception = mirror_bytes32(e, &(current_block->x3));
-                if ( exception != NULL ) {
-                        return exception_throw("Unable to mirror bytes from e.", function_name);
-                }
 	}
 
 	// Free the subkey.
@@ -666,7 +849,6 @@ exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int
 	char* function_name = "serpent_serial_encrypt()";
 	exception_t* exception;
 	uint32* subkey;
-	uint32 a, b, c, d, e;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -684,72 +866,9 @@ exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int
 
 	// Encrypt each block.
 	for ( int i = 0; i < block_count; i++ ) {
-		int j;
-
-		// Get the current block.
-		block128* current_block = &(blocks[i]);
-
-		// Change to little endian.
-		exception = mirror_bytes32(current_block->x0, &a);
+		exception = serpent_encrypt_block(&(blocks[i]), subkey);
 		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes to a.", function_name);
-		}
-		exception = mirror_bytes32(current_block->x1, &b);
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes to b.", function_name);
-		}
-		exception = mirror_bytes32(current_block->x2, &c);
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes to c.", function_name);
-		}
-		exception = mirror_bytes32(current_block->x3, &d);
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes to d.", function_name);
-		}
-
-		// Do the actual encryption.
-		j = 1;
-		do {
-			beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
-			afterS0(KX); afterS0(S1); afterS1(linear_transformation);
-			afterS1(KX); afterS1(S2); afterS2(linear_transformation);
-			afterS2(KX); afterS2(S3); afterS3(linear_transformation);
-			afterS3(KX); afterS3(S4); afterS4(linear_transformation);
-			afterS4(KX); afterS4(S5); afterS5(linear_transformation);
-			afterS5(KX); afterS5(S6); afterS6(linear_transformation);
-			afterS6(KX); afterS6(S7);
-
-			if (j == 4)
-				break;
-
-			++j;
-			c = b;
-			b = e;
-			e = d;
-			d = a;
-			a = e;
-			subkey += 32;
-			beforeS0(linear_transformation);
-		} while (1);
-		afterS7(KX);
-		subkey -= 96;
-
-		// Restore to big endian.
-		exception = mirror_bytes32(d, &(current_block->x0));
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes from d.", function_name);
-		}
-		exception = mirror_bytes32(e, &(current_block->x1));
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes from e.", function_name);
-		}
-		exception = mirror_bytes32(b, &(current_block->x2));
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes from b.", function_name);
-		}
-		exception = mirror_bytes32(a, &(current_block->x3));
-		if ( exception != NULL ) {
-			return exception_throw("Unable to mirror bytes from a.", function_name);
+			return exception_throw("blocks was NULL.", function_name);
 		}
 	}
 
