@@ -64,7 +64,7 @@ exception_t* file_free(file_t* file);
 exception_t* file_get_block_count(file_t* file, long long* block_count);
 
 
-/**	Read in the file data and metadata as per the file's encrypted/decrypted status.
+/**	Read in the file data and metadata as per the file's encrypted/decrypted status. Allocates space for the blocks as a side-effect.
  *	@param	block_index: The index of the first block to read in.
  *	@param	block_count: The number of 128-bit blocks to read in.
  *	@out	blocks: Pointer to the array of blocks read in.
@@ -80,7 +80,7 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 exception_t* file_read_metadata(file_t* file);
 
 
-/**	Write the data and metadata based on the file's encrypted/decrypted status.
+/**	Write the data and metadata based on the file's encrypted/decrypted status. Frees the written blocks as a side-effect.
  *	@param	block_index: The index of the first block to write to.
  *	@param	block_count: The number of blocks to write.
  *	@param	blocks: Pointer to the array of blocks to write.

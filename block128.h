@@ -25,14 +25,14 @@ typedef struct {
 } block128;
 
 
-/**	Read in a 128-bit block from the specified file descriptor.
+/**	DEPRECATED. Read in a 128-bit block from the specified file descriptor.
  *	@out	block: The 128-bit block read in from the file.
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* block128_read(int fd, block128* block);
 
 
-/**	Write a 128-bit block to the specified file descriptor.
+/**	DEPRECATED. Write a 128-bit block to the specified file descriptor.
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* block128_write(int fd, block128* block);

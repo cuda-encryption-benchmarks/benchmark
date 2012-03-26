@@ -191,15 +191,25 @@ exception_t* file_get_block_count(file_t* file, long long* block_count) {
 
 
 exception_t* file_read(file_t* file, int block_index, int block_count, block128** blocks, int* blocks_read) {
+	const int BUFFER_SIZE_MAX = sizeof(block128) * 512;
 	char* function_name = "file_read()";
-	exception_t* exception;
 	// Temporary storage for blocks to prevent multiple dereferences.
 	block128* blocks_local; 
+	uint32* buffer;
+	int buffer_size;
+	int bytes_read;
+	int blocks_read_total;
 	int blocks_read_local;
 
 	// Validate parameters.
 	if ( file == NULL ) {
 		return exception_throw("file was NULL.", function_name);
+	}
+	if ( block_index < 0 ) {
+		return exception_throw("block_index must be greater than zero.", function_name);
+	}
+	if ( block_count < 0 ) {
+		return exception_throw("block_count must be greater than zero.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
@@ -214,24 +224,63 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 		return exception_throw("Unable to allocate space for blocks.", function_name);
 	}
 
+	// Allocate space for the read buffer.
+	if ( (sizeof(block128) * block_count) < BUFFER_SIZE_MAX ) {
+		buffer_size = sizeof(block128) * block_count;
+	}
+	else {
+		buffer_size = BUFFER_SIZE_MAX;
+	}
+	buffer = (uint32*)malloc(buffer_size);
+	if ( buffer == NULL ) {
+		return exception_throw("Unable to allocate space for read buffer.", function_name);
+	}
+
 	// Seek to position in the file at block_index.
 	if ( lseek64(file->fd, (int)(sizeof(block128)*block_index), SEEK_SET) == -1 ) {
 		return exception_throw("Unable to seek to block index.", function_name);
 	}
 
 	// Read in the blocks.
-	blocks_read_local = 0;
-	for ( int i = 0; i < block_count; i++ ) {
-		exception = block128_read(file->fd, &(blocks_local[i]));
-		if ( exception != NULL ) {
-			return exception_append(exception, function_name);
+	blocks_read_total = 0;
+	while ( blocks_read_total < block_count ) {
+		// Read into the buffer.
+		bytes_read = read(file->fd, buffer, buffer_size);
+		if ( bytes_read == -1 ) {
+			perror(NULL);
+			return exception_throw("Reading into buffer FAILED.", function_name);
 		}
-		blocks_read_local++;
+		if ( bytes_read == 0 ) {
+			return exception_throw("End-of-file encountered before all blocks were read.", function_name);
+		}
+		if ( bytes_read % sizeof(block128) != 0 ) {
+			return exception_throw("Unexpected number of bytes read.", function_name);
+		}
+
+		// Calculate number of blocks read.
+		blocks_read_local = bytes_read / sizeof(block128);
+
+		// Assign those blocks.
+		for ( int i = 0; i < blocks_read_local; i++ ) {
+			int blocks_index = blocks_read_total + i;
+			int buffer_index = i*4;
+
+			blocks_local[blocks_index].x0 = buffer[buffer_index];
+			blocks_local[blocks_index].x1 = buffer[buffer_index + 1];
+			blocks_local[blocks_index].x2 = buffer[buffer_index + 2];
+			blocks_local[blocks_index].x3 = buffer[buffer_index + 3];
+		}
+
+		// Calculate total number of blocks read.
+		blocks_read_total += blocks_read_local;
 	}
+
+	// Free the buffer.
+	free(buffer);
 
 	// Set output parameters.
 	(*blocks) = blocks_local;
-	(*blocks_read) = blocks_read_local;
+	(*blocks_read) = blocks_read_total;
 
 	// Return success.
 	return NULL;
@@ -239,12 +288,23 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 
 
 exception_t* file_write(file_t* file, int block_index, int block_count, block128* blocks, int* blocks_written) {
+	const int BUFFER_SIZE_MAX = sizeof(block128) * 512;
 	char* function_name = "file_write()";
-	int blocks_written_local;
+	uint32* buffer;
+	int blocks_written_total;
+	int buffer_size;
+	int blocks_to_write;
+	int bytes_written;
 
 	// Validate parameters.
 	if ( file == NULL ) {
 		return exception_throw("file was NULL.", function_name);
+	}
+	if ( block_index < 0 ) {
+		return exception_throw("block_index must be greater than zero.", function_name);
+	}
+	if ( block_count < 0 ) {
+		return exception_throw("block_count must be greater than zero.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
@@ -259,21 +319,60 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 		return exception_throw("Unable to seek to block_index.", function_name);
 	}
 
-	// Write blocks.
-	blocks_written_local = 0;
-	for ( int i = 0; i < block_count; i++ ) {
-		if ( write(file->fd, &(blocks[i]), sizeof(block128)) == -1 ) {
-			perror(NULL);
-			return exception_throw("Unable to write block.", function_name);
-		}
-		blocks_written_local++;
+	// Calculate buffer size.
+	if ( sizeof(block128) * block_count < BUFFER_SIZE_MAX ) {
+		buffer_size = sizeof(block128) * block_count;
 	}
+	else {
+		buffer_size = BUFFER_SIZE_MAX;
+	}
+
+	// Allocate space for the buffer.
+	buffer = (uint32*)malloc(buffer_size);
+	if ( buffer == NULL ) {
+		return exception_throw("Unable to allocate space for buffer.", function_name);
+	}
+
+	// Write blocks.
+	blocks_written_total = 0;
+	while ( blocks_written_total < block_count ) {
+		// Calculate number of blocks to write.
+		blocks_to_write = buffer_size / sizeof(block128);
+
+		// Copy block data to the buffer.
+		for ( int i = 0; i < blocks_to_write; i++ ) {
+			int blocks_index = blocks_written_total + i;
+			int buffer_index = i * 4;
+
+			buffer[buffer_index] = blocks[blocks_index].x0;
+			buffer[buffer_index + 1] = blocks[blocks_index].x1;
+			buffer[buffer_index + 2] = blocks[blocks_index].x2;
+			buffer[buffer_index + 3] = blocks[blocks_index].x3;
+		}
+
+		// Write the blocks.
+		bytes_written = write(file->fd, buffer, buffer_size);
+		if ( bytes_written == -1 ) {
+			perror(NULL);
+			return exception_throw("Unable to write buffer.", function_name);
+		}
+		if ( bytes_written < buffer_size ) {
+			perror(NULL);
+			return exception_throw("Not all data was written to the file.", function_name);
+		}
+
+		// Calculate total blocks written.
+		blocks_written_total += blocks_to_write;
+	}
+
+	// Free the buffer.
+	free(buffer);
 
 	// Free the written blocks.
 	free(blocks);
 
 	// Set output parameters.
-	(*blocks_written) = blocks_written_local;
+	(*blocks_written) = blocks_written_total;
 
 	// Return success.
 	return NULL;
