@@ -1,6 +1,10 @@
 
+// Macro to allow clock_getres() and related functions.
+#define _POSIX_C_SOURCE 199309L
+
 #include <errno.h>
 #include <fcntl.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "block128.h"
@@ -159,10 +163,11 @@ exception_t* arguments_validate(int argc, char* argv[]) {
 
 
 int main( int argc, char* argv[] ) {
-	//char* function_name = "main()";
 	exception_t* exception;
 	block128* blocks;
 	serpent_key key;
+	struct timespec clock_begin;
+	struct timespec clock_end;
 	long long block_count;
 	int blocks_read;
 	file_t file;
@@ -223,6 +228,30 @@ int main( int argc, char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
+	// Get clock resolution. clock_getres().
+	fprintf(stdout, "Clock resolution: ");
+	if ( clock_getres(CLOCK_REALTIME, &clock_begin) == -1 ) {
+		fprintf(stdout, "Unknown -- ");
+		fflush(stdout);
+		perror(NULL);
+	}
+	else { 
+		fprintf(stdout, "%li nanosecond(s)", clock_begin.tv_nsec );
+	}
+	fprintf(stdout, ".\n");
+
+	// Get begin time.
+	fprintf(stdout, "Begin time: ");
+	if ( clock_gettime(CLOCK_REALTIME, &clock_begin) == -1 ) {
+		fprintf(stdout, "Unknown -- ");
+		fflush(stdout);
+		perror(NULL);
+	}
+	else {
+		fprintf(stdout, "%li seconds(s), %li nanosecond(s)", clock_begin.tv_sec, clock_begin.tv_nsec);
+	}
+	fprintf(stdout, ".\n");
+
 	// Call the algorithm.
 	switch(algorithm) {
 	case AES:
@@ -242,6 +271,18 @@ int main( int argc, char* argv[] ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
 	}
+
+	// Get end time.
+	fprintf(stdout, "End time: ");
+	if ( clock_gettime(CLOCK_REALTIME, &clock_end) == -1 ) {
+		fprintf(stdout, "Unknown -- ");
+		fflush(stdout);
+		perror(NULL);
+	}
+	else {
+		fprintf(stdout, "%li second(s),%li nanosecond(s)", clock_end.tv_sec, clock_end.tv_nsec);
+	}
+	fprintf(stdout, ".\n");
 
 	// Write data to file.
 	exception = file_write(&file, 0, block_count, blocks, &blocks_read);

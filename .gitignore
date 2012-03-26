@@ -3,4 +3,6 @@ benchmark
 backup.txt
 input.txt
 output.txt
+small1.txt
+small2.txt
 libccc.so

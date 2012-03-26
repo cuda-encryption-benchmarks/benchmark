@@ -338,6 +338,9 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	while ( blocks_written_total < block_count ) {
 		// Calculate number of blocks to write.
 		blocks_to_write = buffer_size / sizeof(block128);
+		if ( blocks_to_write > block_count - blocks_written_total ) {
+			blocks_to_write = block_count - blocks_written_total;
+		}
 
 		// Copy block data to the buffer.
 		for ( int i = 0; i < blocks_to_write; i++ ) {
