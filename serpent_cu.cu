@@ -587,7 +587,7 @@ __device__ uint32 mirror_bytes32_cu(uint32 x) {
 extern "C"
 int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	// Total number of registers taken up by a single CUDA thread.
-	const int REGISTERS_PER_THREAD = 10;
+	const int REGISTERS_PER_THREAD = 8;
 	block128* cuda_blocks;
 	cudaError_t cuda_error;
 	size_t total_global_memory;
