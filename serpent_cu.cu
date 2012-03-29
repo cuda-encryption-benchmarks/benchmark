@@ -493,7 +493,7 @@ __device__ void serpent_cuda_decrypt_block(block128* block, uint32* subkey) {
 
 
 __global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, uint32* subkey, int block_count, int blocks_per_thread ) {
-	int index = (blockIdx.x * blockDim.x) + (threadIdx.x * blocks_per_thread);
+	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
 	int i;
 
 	// Encrypted the minimal number of blocks.
@@ -502,7 +502,7 @@ __global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, uint32* subk
 	}
 
 	// Encrypt the extra blocks that fall outside the minimal number of block.s
-	index = ( blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
+	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
 	if ( index < block_count ) {
 		serpent_cuda_decrypt_block(&(cuda_blocks[index]), subkey);
 	}
@@ -586,13 +586,18 @@ __device__ uint32 mirror_bytes32_cu(uint32 x) {
 
 extern "C"
 int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
-	//cudaDeviceProp cuda_device;
+	// Total number of registers taken up by a single CUDA thread.
+	const int REGISTERS_PER_THREAD = 10;
 	block128* cuda_blocks;
 	uint32* cuda_subkey;
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
-	int count; int i;
+	int count; 
+	int device_number;
+	int multiprocessor_count;
+	int thread_count;
+	int i;
 
 	// Validate parameters.
 	if ( subkey == NULL ) {
@@ -615,7 +620,14 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		return -1;
 	}
 	else if ( count == 0 ) {
-		fprintf(stderr, "No CUDA-capable devices found.");
+		fprintf(stderr, "No CUDA-capable devices found.\n");
+		return -1;
+	}
+
+	// Calculate multiprocessor and thread count.
+	device_number = 0;
+	if ( cuda_get_block_and_thread_count_max(device_number, REGISTERS_PER_THREAD, &multiprocessor_count, &thread_count) == -1 ) {
+		fprintf(stderr, "Unable to get multiprocessor and thread count.\n");
 		return -1;
 	}
 
@@ -641,9 +653,8 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	fprintf(stderr, "Total global memory: %i.\n", total_global_memory);
 
 	// Calculate number of blocks per thread.
-	int thread_count = 440;
 	int blocks_per_kernel = free_global_memory / sizeof(block128);
-	int blocks_per_thread = blocks_per_kernel / thread_count;
+	int blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
 	fprintf(stderr, "Blocks global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
 
 	// Allocate a buffer for the blocks on the GPU.
@@ -671,7 +682,7 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		}
 
 		// Run encryption.
-		serpent_cuda_decrypt_blocks<<<1,thread_count>>>(cuda_blocks, cuda_subkey, blocks_per_kernel, blocks_per_thread);
+		serpent_cuda_decrypt_blocks<<<multiprocessor_count ,thread_count>>>(cuda_blocks, cuda_subkey, blocks_per_kernel, blocks_per_thread);
 		cuda_error = cudaGetLastError();
 		if ( cuda_error != cudaSuccess ) {
 			fprintf(stderr, "Unable to invoke CUDA kernel: %s.\n", cudaGetErrorString(cuda_error));
@@ -713,6 +724,7 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	size_t total_global_memory;
 	size_t free_global_memory;
 	int count;
+	int device_number;
 	int multiprocessor_count;
 	int thread_count;
 	int i;
@@ -743,13 +755,14 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	}
 
 	// Calculate the number of multiprocessors and threads to launch.
-	if ( cuda_get_block_and_thread_count_max(0, REGISTERS_PER_THREAD, &multiprocessor_count, &thread_count) == -1 ) {
+	device_number = 0;
+	if ( cuda_get_block_and_thread_count_max(device_number, REGISTERS_PER_THREAD, &multiprocessor_count, &thread_count) == -1 ) {
 		fprintf(stderr, "Unable to get max thread count.\n");
 		return -1;
 	}
 	fprintf(stdout, "Multiprocessors: %i, threads: %i.\n", multiprocessor_count, thread_count);
 
-	// Move subkey to memory.
+	// Move subkey to constant memory.
 	cuda_error = cudaMemcpyToSymbol( "cuda_subkey", subkey, sizeof(uint32) * SUBKEY_LENGTH);
 	if ( cuda_error != cudaSuccess ) {
 		fprintf(stderr, "Unable to copy subkey to constant memory: %s.\n", cudaGetErrorString(cuda_error));
