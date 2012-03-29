@@ -492,19 +492,19 @@ __device__ void serpent_cuda_decrypt_block(block128* block, uint32* subkey) {
 }
 
 
-__global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, uint32* subkey, int block_count, int blocks_per_thread ) {
+__global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, int block_count, int blocks_per_thread ) {
 	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
 	int i;
 
 	// Encrypted the minimal number of blocks.
 	for ( i = 0; i < blocks_per_thread; i++ ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index + i]), subkey);
+		serpent_cuda_decrypt_block(&(cuda_blocks[index + i]), cuda_subkey);
 	}
 
 	// Encrypt the extra blocks that fall outside the minimal number of block.s
 	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
 	if ( index < block_count ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index]), subkey);
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
 	}
 }
 
@@ -589,7 +589,6 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	// Total number of registers taken up by a single CUDA thread.
 	const int REGISTERS_PER_THREAD = 10;
 	block128* cuda_blocks;
-	uint32* cuda_subkey;
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
@@ -632,14 +631,9 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	}
 
 	// Move subkey to constant memory.
-	cuda_error = cudaMalloc( (void**)&cuda_subkey, sizeof(uint32) * SUBKEY_LENGTH);
+	cuda_error = cudaMemcpyToSymbol( "cuda_subkey", subkey, sizeof(uint32) * SUBKEY_LENGTH);
 	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to malloc subkey: %s.\n", cudaGetErrorString(cuda_error));
-		return -1;
-	}
-	cuda_error = cudaMemcpy( cuda_subkey, subkey, sizeof(uint32) * SUBKEY_LENGTH, cudaMemcpyHostToDevice);
-	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to memcopy subkey: %s.\n", cudaGetErrorString(cuda_error));
+		fprintf(stderr, "Unable to copy subkey to constant memory: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 
@@ -682,7 +676,7 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		}
 
 		// Run encryption.
-		serpent_cuda_decrypt_blocks<<<multiprocessor_count ,thread_count>>>(cuda_blocks, cuda_subkey, blocks_per_kernel, blocks_per_thread);
+		serpent_cuda_decrypt_blocks<<<multiprocessor_count ,thread_count>>>(cuda_blocks, blocks_per_kernel, blocks_per_thread);
 		cuda_error = cudaGetLastError();
 		if ( cuda_error != cudaSuccess ) {
 			fprintf(stderr, "Unable to invoke CUDA kernel: %s.\n", cudaGetErrorString(cuda_error));
@@ -702,9 +696,6 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 
 	// Free blocks from global memory.
 	cudaFree(cuda_blocks);
-
-	// Free key from constant memory.
-	cudaFree(cuda_subkey);
 
 	// Return success.
 	return 0;
