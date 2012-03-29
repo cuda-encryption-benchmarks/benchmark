@@ -9,9 +9,7 @@ cfiles =	main \
 		file \
 		mirror_bytes \
 		serpent
-cufiles = 	cuda_extension \
-		serpent_cu # Linker does not like files with the same name.
-		
+cufiles = 	serpent_cu # Linker does not like files with the same name. (Super-Serious Serpent).
 
 # Version information.
 major_number = 0

@@ -6,7 +6,6 @@
 
 #include "block128.h"
 #include "ccc/ccc.h"
-#include "cuda_extension.h"
 #include "mirror_bytes.h"
 #include "typedef.h"
 
