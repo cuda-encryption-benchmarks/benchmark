@@ -589,34 +589,52 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	//cudaDeviceProp cuda_device;
 	block128* cuda_blocks;
 	uint32* cuda_subkey;
+	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
-	int count;
-	int i;
+	int count; int i;
 
-	// Get the number of devices.
-	if ( cudaGetDeviceCount( &count ) != cudaSuccess ) {
-		fprintf(stderr, "Unable to get device count.");
+	// Validate parameters.
+	if ( subkey == NULL ) {
+		fprintf(stderr, "subkey was NULL.\n");
 		return -1;
 	}
-	if ( count == 0 ) {
+	else if ( blocks == NULL ) {
+		fprintf(stderr, "blocks was NULL.\n");
+		return -1;
+	}
+	else if ( block_count < 1 ) {
+		fprintf(stderr, "block_count was less than 1.\n");
+		return -1;
+	}
+
+	// Get the number of devices.
+	cuda_error = cudaGetDeviceCount( &count );
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to get device count: %s.\n", cudaGetErrorString(cuda_error));
+		return -1;
+	}
+	else if ( count == 0 ) {
 		fprintf(stderr, "No CUDA-capable devices found.");
 		return -1;
 	}
 
 	// Move subkey to constant memory.
-	if ( cudaMalloc( (void**)&cuda_subkey, sizeof(uint32) * SUBKEY_LENGTH) != cudaSuccess ) {
-		fprintf(stderr, "Unable to malloc subkey.");
+	cuda_error = cudaMalloc( (void**)&cuda_subkey, sizeof(uint32) * SUBKEY_LENGTH);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to malloc subkey: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
-	if ( cudaMemcpy( cuda_subkey, subkey, sizeof(uint32) * SUBKEY_LENGTH, cudaMemcpyHostToDevice) != cudaSuccess ) {
-		fprintf(stderr, "Unable to memcopy subkey.");
+	cuda_error = cudaMemcpy( cuda_subkey, subkey, sizeof(uint32) * SUBKEY_LENGTH, cudaMemcpyHostToDevice);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to memcopy subkey: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 
 	// Calculate the amount of global memory available for blocks.
-	if ( cudaMemGetInfo(&free_global_memory, &total_global_memory) != cudaSuccess ) {
-		fprintf(stderr, "Unable to get memory information.");
+	cuda_error = cudaMemGetInfo(&free_global_memory, &total_global_memory);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to get memory information: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 	free_global_memory -= SERPENT_CUDA_MEMORY_BUFFER; // Magic number.
@@ -629,9 +647,9 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	fprintf(stderr, "Blocks global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
 
 	// Allocate a buffer for the blocks on the GPU.
-	if ( cudaMalloc( (void**)&cuda_blocks, (int)(sizeof(block128) * blocks_per_kernel) ) != cudaSuccess ) {
-		fprintf(stderr, "Unable to malloc blocks.\n");
-		fprintf(stderr, "Error message: %s.\n", cudaGetErrorString(cudaGetLastError()));
+	cuda_error = cudaMalloc( (void**)&cuda_blocks, (int)(sizeof(block128) * blocks_per_kernel) );
+	if ( cuda_error != cudaSuccess ) { 
+		fprintf(stderr, "Unable to malloc blocks: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 
@@ -639,7 +657,6 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	i = 0;
 	while (i < block_count) {
 		fprintf(stderr, "Running an iteration. i: %i. block_count: %i.\n", i, block_count);
-		cudaError_t error;
 
 		// Corner case.
 		if ( i + blocks_per_kernel > block_count ) {
@@ -647,23 +664,24 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		}
 
 		// Move blocks to global memory.
-		if ( cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128) * blocks_per_kernel, cudaMemcpyHostToDevice ) != cudaSuccess ) {
-			fprintf(stderr, "Unable to memcopy blocks.");
+		cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128) * blocks_per_kernel, cudaMemcpyHostToDevice );
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to memcopy blocks: %s.\n", cudaGetErrorString(cuda_error));
 			return -1;
 		}
 
 		// Run encryption.
 		serpent_cuda_decrypt_blocks<<<1,thread_count>>>(cuda_blocks, cuda_subkey, blocks_per_kernel, blocks_per_thread);
-		error = cudaGetLastError();
-		if ( error != cudaSuccess ) {
-			fprintf(stderr, "ERROR on the GPU.");
-			fprintf(stderr, "Error message: %s.\n", cudaGetErrorString(error));
+		cuda_error = cudaGetLastError();
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to invoke CUDA kernel: %s.\n", cudaGetErrorString(cuda_error));
 			return -1;
 		}
 
 		// Get blocks from global memory.
-		if ( cudaMemcpy( &(blocks[i]), cuda_blocks, sizeof(block128) * blocks_per_kernel, cudaMemcpyDeviceToHost ) != cudaSuccess ) {
-			fprintf(stderr, "Unable to retrieve blocks.");
+		cuda_error = cudaMemcpy( &(blocks[i]), cuda_blocks, sizeof(block128) * blocks_per_kernel, cudaMemcpyDeviceToHost );
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to retrieve blocks: %s.\n", cudaGetErrorString(cuda_error));
 			return -1;
 		}
 	
@@ -698,6 +716,20 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	int multiprocessor_count;
 	int thread_count;
 	int i;
+
+	// Validate parameters.
+	if ( subkey == NULL ) {
+		fprintf(stderr, "subkey was NULL.\n");
+		return -1;
+	}
+	else if ( blocks == NULL ) {
+		fprintf(stderr, "blocks was NULL.\n");
+		return -1;
+	}
+	else if ( block_count < 1 ) {
+		fprintf(stderr, "block_count was less than 1.\n");
+		return -1;
+	}
 
 	// Get the number of devices.
 	cuda_error = cudaGetDeviceCount( &count );
