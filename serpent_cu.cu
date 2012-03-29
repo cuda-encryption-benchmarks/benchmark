@@ -447,7 +447,13 @@ __device__ uint32 mirror_bytes32_cu(uint32 x);
 
 
 // Constant variables must be declared with a static scope...
+// Array to hold the expanded serpent key.
 __device__ __constant__ uint32 cuda_subkey[SUBKEY_LENGTH];
+// The total number of blocks being decrypted by a single CUDA thread.
+__device__ __constant__ int blocks_per_thread;
+// The total number of blocks being decrypted in the entire CUDA kernel.
+__device__ __constant__ int block_count;
+
 
 
 __device__ void serpent_cuda_decrypt_block(block128* block, uint32* subkey) {
@@ -553,13 +559,18 @@ __device__ void serpent_cuda_encrypt_block(block128* block, uint32* subkey) {
 }
 
 
-__global__ void serpent_cuda_encrypt_blocks( block128* cuda_blocks, int block_count, int blocks_per_thread ) {
-	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
+__global__ void serpent_cuda_encrypt_blocks( block128* cuda_blocks ) {
+	//int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
+	int index = (blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x;
 	int i;
 
 	// Encrypted the minimal number of blocks.
 	for ( i = 0; i < blocks_per_thread; i++ ) {
-		serpent_cuda_encrypt_block(&(cuda_blocks[index + i]), cuda_subkey);
+		// Encrypt the block.
+		serpent_cuda_encrypt_block(&(cuda_blocks[index]), cuda_subkey);
+
+		// Increment the index.
+		index += blockDim.x;
 	}
 
 	// Encrypt the extra blocks that fall outside the minimal number of block.s
@@ -753,7 +764,7 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 	}
 	fprintf(stdout, "Multiprocessors: %i, threads: %i.\n", multiprocessor_count, thread_count);
 
-	// Move subkey to constant memory.
+	// Copy the subkey to constant memory.
 	cuda_error = cudaMemcpyToSymbol( "cuda_subkey", subkey, sizeof(uint32) * SUBKEY_LENGTH);
 	if ( cuda_error != cudaSuccess ) {
 		fprintf(stderr, "Unable to copy subkey to constant memory: %s.\n", cudaGetErrorString(cuda_error));
@@ -791,6 +802,20 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 			blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
 		}
 
+		// Copy blocks per thread to constant memory.
+		cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+			return -1;
+		}
+
+		// Copy blocks per kernel to constant memory.
+		cuda_error = cudaMemcpyToSymbol( "block_count", &block_count, sizeof(int));
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to copy block_count to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+			return -1;
+		}
+
 		// Move blocks to global memory.
 		cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128) * blocks_per_kernel, cudaMemcpyHostToDevice );
 		if ( cuda_error != cudaSuccess ) {
@@ -799,7 +824,7 @@ int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		}
 
 		// Run encryption.
-		serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks, blocks_per_kernel, blocks_per_thread);
+		serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
 		cuda_error = cudaGetLastError();
 		if ( cuda_error != cudaSuccess ) {
 			fprintf(stderr, "ERROR invoking the kernel: %s.\n", cudaGetErrorString(cuda_error));
