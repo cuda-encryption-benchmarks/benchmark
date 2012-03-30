@@ -499,7 +499,7 @@ __device__ void serpent_cuda_decrypt_block(block128* block, uint32* subkey) {
 }
 
 
-__global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, int block_count, int blocks_per_thread ) {
+__global__ void serpent_cuda_decrypt_blocks(block128* cuda_blocks) {
 	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
 	int i;
 
@@ -510,7 +510,7 @@ __global__ void serpent_cuda_decrypt_blocks( block128* cuda_blocks, int block_co
 
 	// Encrypt the extra blocks that fall outside the minimal number of block.s
 	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
-	if ( index < block_count ) {
+	if ( index < blocks_per_kernel ) {
 		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
 	}
 }
@@ -745,6 +745,21 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		// Corner case.
 		if ( i + blocks_per_kernel > block_count ) {
 			blocks_per_kernel = block_count - i;
+			blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
+		}
+
+		// Copy blocks per thread to constant memory.
+		cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+			return -1;
+		}
+
+		// Copy blocks per kernel to constant memory.
+		cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
+		if ( cuda_error != cudaSuccess ) {
+			fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+			return -1;
 		}
 
 		// Move blocks to global memory.
@@ -755,7 +770,7 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count) {
 		}
 
 		// Run encryption.
-		serpent_cuda_decrypt_blocks<<<multiprocessor_count ,thread_count>>>(cuda_blocks, blocks_per_kernel, blocks_per_thread);
+		serpent_cuda_decrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
 		cuda_error = cudaGetLastError();
 		if ( cuda_error != cudaSuccess ) {
 			fprintf(stderr, "Unable to invoke CUDA kernel: %s.\n", cudaGetErrorString(cuda_error));
