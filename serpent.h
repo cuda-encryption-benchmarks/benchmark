@@ -1,3 +1,11 @@
+// serpent.cpp - written and placed in the public domain by Wei Dai.
+
+/* Subsequently adapted for TrueCrypt (copyrighted by its respectful owners)... 
+   and then subsequently re-adapted for CUDA benchmarking. */
+
+// A copy of the TrueCrypt license is contained in license/true_crypt.txt.
+
+
 #ifndef serpent_H
 #define serpent_H
 
