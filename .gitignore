@@ -1,5 +1,6 @@
 benchmark
 .*.swp
+encrypted.txt
 backup.txt
 input.txt
 output.txt

@@ -47,6 +47,8 @@
         a = rotr_fixed(a, 13);}
 
 
+// The nstruction sequences for the S-box functions
+// come from Dag Arne Osvik's paper "Speeding Up Serpent".
 #define S0(i, r0, r1, r2, r3, r4) \
        {	   \
     r3 ^= r0;   \
