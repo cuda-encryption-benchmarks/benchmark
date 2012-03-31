@@ -553,28 +553,15 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 
 
 exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
-	char* function_name = "serpent_decrypt_block()";
-	exception_t* exception;
+	//char* function_name = "serpent_decrypt_block()";
 	uint32_t a, b, c, d, e;
 	int j;
 
 	// Change to little endian.
-	exception = mirror_bytes32(block->x0, &a);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x1, &b);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x2, &c);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x3, &d);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
+	a = mirror_bytes32(block->x0);
+	b = mirror_bytes32(block->x1);
+	c = mirror_bytes32(block->x2);
+	d = mirror_bytes32(block->x3);
 
 	// Decrypt the current block.
 	j = 4;
@@ -601,22 +588,10 @@ exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
 	while (--j != 0);
 
 	// Restore to big endian, taking into account the significance of each block.
-	exception = mirror_bytes32(a, &(block->x0));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(d, &(block->x1));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(b, &(block->x2));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(e, &(block->x3));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
+	block->x0 = mirror_bytes32(a);
+	block->x1 = mirror_bytes32(d);
+	block->x2 = mirror_bytes32(b);
+	block->x3 = mirror_bytes32(e);
 
 	// Return success.
 	return NULL;
@@ -624,28 +599,16 @@ exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
 
 
 exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
-	char* function_name = "serpent_encrypt_block()";
-	exception_t* exception;
+	//char* function_name = "serpent_encrypt_block()";
+	//exception_t* exception;
 	uint32_t a, b, c, d, e;
 	int j;
 
 	// Change to little endian.
-	exception = mirror_bytes32(block->x0, &a);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x1, &b);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x2, &c);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(block->x3, &d);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
+	a = mirror_bytes32(block->x0);
+	b = mirror_bytes32(block->x1);
+	c = mirror_bytes32(block->x2);
+	d = mirror_bytes32(block->x3);
 
 	// Do the actual encryption.
 	j = 1;
@@ -674,22 +637,10 @@ exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
 	afterS7(KX);
 
 	// Restore to big endian.
-	exception = mirror_bytes32(d, &(block->x0));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(e, &(block->x1));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(b, &(block->x2));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-	exception = mirror_bytes32(a, &(block->x3));
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
+	block->x0 = mirror_bytes32(d);
+	block->x1 = mirror_bytes32(e);
+	block->x2 = mirror_bytes32(b);
+	block->x3 = mirror_bytes32(a);
 
 	// Return success.
 	return NULL;
@@ -918,10 +869,7 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32_t** subkey) {
 		}
 
 		// Endianize the key value.
-		exception = mirror_bytes32(word, &word);
-		if ( exception != NULL ) {
-			return exception_append(exception, function_name);
-		}
+		word = mirror_bytes32(word);
 
 		// Set the key value.
 		genkey[i] = word;
