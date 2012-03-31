@@ -420,7 +420,7 @@
 	d ^= subkey[4 * r + 3];}
 
 
-exception_t* serpent(serpent_key* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption) {
+exception_t* serpent(key256_t* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption) {
 	char* function_name = "serpent()";
 	exception_t* exception;
 
@@ -482,7 +482,7 @@ exception_t* serpent(serpent_key* user_key, block128* blocks, int block_count, e
 }
 
 
-exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_cuda_decrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_cuda_decrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -517,7 +517,7 @@ exception_t* serpent_cuda_decrypt(serpent_key* user_key, block128* blocks, int b
 }
 
 
-exception_t* serpent_cuda_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_cuda_encrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_cuda_encrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -696,7 +696,7 @@ exception_t* serpent_encrypt_block(block128* block, uint32* subkey) {
 }
 
 
-exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_parallel_decrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_parallel_decrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -753,7 +753,7 @@ exception_t* serpent_parallel_decrypt(serpent_key* user_key, block128* blocks, i
 }
 
 
-exception_t* serpent_parallel_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_parallel_encrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_parallel_encrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -810,7 +810,7 @@ exception_t* serpent_parallel_encrypt(serpent_key* user_key, block128* blocks, i
 }
 
 
-exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_serial_decrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_serial_decrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -849,7 +849,7 @@ exception_t* serpent_serial_decrypt(serpent_key* user_key, block128* blocks, int
 }
 
 
-exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int block_count) {
+exception_t* serpent_serial_encrypt(key256_t* user_key, block128* blocks, int block_count) {
 	char* function_name = "serpent_serial_encrypt()";
 	exception_t* exception;
 	uint32* subkey;
@@ -887,7 +887,7 @@ exception_t* serpent_serial_encrypt(serpent_key* user_key, block128* blocks, int
 }
 
 
-exception_t* serpent_init_subkey(serpent_key* user_key, uint32** subkey) {
+exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey) {
 	char* function_name = "serpent_init_subkey()";
 	const int PREKEY_SIZE = 140;
 	exception_t* exception;
@@ -912,7 +912,7 @@ exception_t* serpent_init_subkey(serpent_key* user_key, uint32** subkey) {
 	for ( int i = 0; i < 8; i++ ) {
 		uint32 word;
 		// Get the key value.
-		exception = serpent_key_get_word(user_key, i, &word);
+		exception = key256_get_word(user_key, i, &word);
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
@@ -988,8 +988,8 @@ exception_t* serpent_free_subkey(uint32* subkey) {
 }
 
 
-exception_t* serpent_key_get_word(serpent_key* key, int index, uint32* word) {
-	char* function_name = "serpent_key_get_word()";
+exception_t* key256_t_get_word(key256_t* key, int index, uint32* word) {
+	char* function_name = "key256_t_get_word()";
 
 	// Validate parameters.
 	if ( key == NULL ) {
@@ -1037,8 +1037,8 @@ exception_t* serpent_key_get_word(serpent_key* key, int index, uint32* word) {
 }
 
 
-exception_t* serpent_key_set_word(serpent_key* key, int index, uint32 word) {
-	char* function_name = "serpent_key_set_word()";
+exception_t* key256_t_set_word(key256_t* key, int index, uint32 word) {
+	char* function_name = "key256_t_set_word()";
 
 	// Validate parameters.
 	if ( key == NULL ) {

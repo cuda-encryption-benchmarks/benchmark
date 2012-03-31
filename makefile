@@ -7,6 +7,7 @@ libraries = -lccc -lcuda -lcudart -lgomp
 cfiles =	main \
 		block128 \
 		file \
+		key \
 		mirror_bytes \
 		serpent
 cufiles = 	cuda_extension \
