@@ -27,7 +27,7 @@ enum file_encryption {
 // Structure which contains an abstraction for an open file.
 typedef struct {
 	// The data of the file in 128-bit blocks.
-	block128* blocks;
+	block128_t* blocks;
 	// The name of the file.
 	char* name;
 	// The number of blocks.
@@ -71,7 +71,7 @@ exception_t* file_get_block_count(file_t* file, long long* block_count);
  *	@out	blocks_read: The number of blocks read in.
  *	@return	NULL on success; exception_t* on failure.
  */
-exception_t* file_read(file_t* file, int block_index, int block_count, block128** blocks, int* blocks_read);
+exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks, int* blocks_read);
 
 
 /**	Private function which reads in file metadata.
@@ -87,7 +87,7 @@ exception_t* file_read_metadata(file_t* file);
  *	@out	blocks_written: The number of blocks written.
  *	@return	NULL on success; exception_t* on failure.
  */
-exception_t* file_write(file_t* file, int block_index, int block_count, block128* blocks, int* blocks_written);
+exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks, int* blocks_written);
 
 
 /**	Private function which writes file metadata.

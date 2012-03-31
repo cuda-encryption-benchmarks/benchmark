@@ -96,12 +96,12 @@ exception_t* file_init(const char* file_name, enum file_encryption flag, file_t*
 		int temp;
 
 		// Calculate file padding.
-		temp = file->size % sizeof(block128);
+		temp = file->size % sizeof(block128_t);
 		if ( temp == 0 ) {
 			file->padding = temp;
 		}
 		else {
-			file->padding = sizeof(block128) - temp;
+			file->padding = sizeof(block128_t) - temp;
 
 			// Pad the file.
 			exception = file_write_padding(file);
@@ -183,19 +183,19 @@ exception_t* file_get_block_count(file_t* file, long long* block_count) {
 	}
 
 	// Calculate number of blocks.
-	(*block_count) = file->size / sizeof(block128);
+	(*block_count) = file->size / sizeof(block128_t);
 
 	// Return success.
 	return NULL;
 }
 
 
-exception_t* file_read(file_t* file, int block_index, int block_count, block128** blocks, int* blocks_read) {
-	const int BUFFER_SIZE_MAX = sizeof(block128) * 512;
+exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks, int* blocks_read) {
+	const int BUFFER_SIZE_MAX = sizeof(block128_t) * 512;
 	char* function_name = "file_read()";
 	// Temporary storage for blocks to prevent multiple dereferences.
-	block128* blocks_local; 
-	uint32* buffer;
+	block128_t* blocks_local; 
+	uint32_t* buffer;
 	int buffer_size;
 	int bytes_read;
 	int blocks_read_total;
@@ -218,26 +218,26 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 		return exception_throw("blocks_read was NULL.", function_name);
 	}
 
-	// Allocate space for block_count block128s.
-	blocks_local = (block128*)malloc(sizeof(block128) * block_count);
+	// Allocate space for block_count block128_ts.
+	blocks_local = (block128_t*)malloc(sizeof(block128_t) * block_count);
 	if ( blocks_local == NULL ) {
 		return exception_throw("Unable to allocate space for blocks.", function_name);
 	}
 
 	// Allocate space for the read buffer.
-	if ( (sizeof(block128) * block_count) < BUFFER_SIZE_MAX ) {
-		buffer_size = sizeof(block128) * block_count;
+	if ( (sizeof(block128_t) * block_count) < BUFFER_SIZE_MAX ) {
+		buffer_size = sizeof(block128_t) * block_count;
 	}
 	else {
 		buffer_size = BUFFER_SIZE_MAX;
 	}
-	buffer = (uint32*)malloc(buffer_size);
+	buffer = (uint32_t*)malloc(buffer_size);
 	if ( buffer == NULL ) {
 		return exception_throw("Unable to allocate space for read buffer.", function_name);
 	}
 
 	// Seek to position in the file at block_index.
-	if ( lseek64(file->fd, (int)(sizeof(block128)*block_index), SEEK_SET) == -1 ) {
+	if ( lseek64(file->fd, (int)(sizeof(block128_t)*block_index), SEEK_SET) == -1 ) {
 		return exception_throw("Unable to seek to block index.", function_name);
 	}
 
@@ -253,12 +253,12 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 		if ( bytes_read == 0 ) {
 			return exception_throw("End-of-file encountered before all blocks were read.", function_name);
 		}
-		if ( bytes_read % sizeof(block128) != 0 ) {
+		if ( bytes_read % sizeof(block128_t) != 0 ) {
 			return exception_throw("Unexpected number of bytes read.", function_name);
 		}
 
 		// Calculate number of blocks read.
-		blocks_read_local = bytes_read / sizeof(block128);
+		blocks_read_local = bytes_read / sizeof(block128_t);
 
 		// Assign those blocks.
 		for ( int i = 0; i < blocks_read_local; i++ ) {
@@ -287,10 +287,10 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128*
 }
 
 
-exception_t* file_write(file_t* file, int block_index, int block_count, block128* blocks, int* blocks_written) {
-	const int BUFFER_SIZE_MAX = sizeof(block128) * 512;
+exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks, int* blocks_written) {
+	const int BUFFER_SIZE_MAX = sizeof(block128_t) * 512;
 	char* function_name = "file_write()";
-	uint32* buffer;
+	uint32_t* buffer;
 	int blocks_written_total;
 	int buffer_size;
 	int blocks_to_write;
@@ -314,21 +314,21 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	}
 
 	// Seek to block_index.
-	if ( lseek64(file->fd, (int)(sizeof(block128)  * block_index), SEEK_SET) == -1 ) {
+	if ( lseek64(file->fd, (int)(sizeof(block128_t)  * block_index), SEEK_SET) == -1 ) {
 		perror(NULL);
 		return exception_throw("Unable to seek to block_index.", function_name);
 	}
 
 	// Calculate buffer size.
-	if ( sizeof(block128) * block_count < BUFFER_SIZE_MAX ) {
-		buffer_size = sizeof(block128) * block_count;
+	if ( sizeof(block128_t) * block_count < BUFFER_SIZE_MAX ) {
+		buffer_size = sizeof(block128_t) * block_count;
 	}
 	else {
 		buffer_size = BUFFER_SIZE_MAX;
 	}
 
 	// Allocate space for the buffer.
-	buffer = (uint32*)malloc(buffer_size);
+	buffer = (uint32_t*)malloc(buffer_size);
 	if ( buffer == NULL ) {
 		return exception_throw("Unable to allocate space for buffer.", function_name);
 	}
@@ -337,7 +337,7 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	blocks_written_total = 0;
 	while ( blocks_written_total < block_count ) {
 		// Calculate number of blocks to write.
-		blocks_to_write = buffer_size / sizeof(block128);
+		blocks_to_write = buffer_size / sizeof(block128_t);
 		if ( blocks_to_write > block_count - blocks_written_total ) {
 			blocks_to_write = block_count - blocks_written_total;
 		}

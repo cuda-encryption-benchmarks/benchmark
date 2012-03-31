@@ -1,7 +1,7 @@
 #include "key.h"
 
 
-exception_t* key256_get_word(key256_t* key, int index, uint32* word) {
+exception_t* key256_get_word(key256_t* key, int index, uint32_t* word) {
 	char* function_name = "serpent_key_get_word()";
 
         // Validate parameters.
@@ -50,7 +50,7 @@ exception_t* key256_get_word(key256_t* key, int index, uint32* word) {
 }
 
 
-exception_t* key256_set_word(key256_t* key, int index, uint32 word) {
+exception_t* key256_set_word(key256_t* key, int index, uint32_t word) {
 	char* function_name = "serpent_key_set_word()";
 
         // Validate parameters.

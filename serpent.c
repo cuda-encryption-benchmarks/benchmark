@@ -420,7 +420,7 @@
 	d ^= subkey[4 * r + 3];}
 
 
-exception_t* serpent(key256_t* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption) {
+exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption) {
 	char* function_name = "serpent()";
 	exception_t* exception;
 
@@ -482,10 +482,10 @@ exception_t* serpent(key256_t* user_key, block128* blocks, int block_count, enum
 }
 
 
-exception_t* serpent_cuda_decrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_cuda_decrypt()";
 	exception_t* exception;
-	uint32* subkey;
+	uint32_t* subkey;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -517,10 +517,10 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128* blocks, int bloc
 }
 
 
-exception_t* serpent_cuda_encrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_cuda_encrypt()";
 	exception_t* exception;
-	uint32* subkey;
+	uint32_t* subkey;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -552,10 +552,10 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128* blocks, int bloc
 }
 
 
-exception_t* serpent_decrypt_block(block128* block, uint32* subkey) {
+exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
 	char* function_name = "serpent_decrypt_block()";
 	exception_t* exception;
-	uint32 a, b, c, d, e;
+	uint32_t a, b, c, d, e;
 	int j;
 
 	// Change to little endian.
@@ -623,10 +623,10 @@ exception_t* serpent_decrypt_block(block128* block, uint32* subkey) {
 }
 
 
-exception_t* serpent_encrypt_block(block128* block, uint32* subkey) {
+exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
 	char* function_name = "serpent_encrypt_block()";
 	exception_t* exception;
-	uint32 a, b, c, d, e;
+	uint32_t a, b, c, d, e;
 	int j;
 
 	// Change to little endian.
@@ -696,10 +696,10 @@ exception_t* serpent_encrypt_block(block128* block, uint32* subkey) {
 }
 
 
-exception_t* serpent_parallel_decrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_parallel_decrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_parallel_decrypt()";
 	exception_t* exception;
-	uint32* subkey;
+	uint32_t* subkey;
 	int blocks_per_thread;
 	int thread_count;
 	int thread_index;
@@ -753,10 +753,10 @@ exception_t* serpent_parallel_decrypt(key256_t* user_key, block128* blocks, int 
 }
 
 
-exception_t* serpent_parallel_encrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_parallel_encrypt()";
 	exception_t* exception;
-	uint32* subkey;
+	uint32_t* subkey;
 	int blocks_per_thread;
 	int thread_count;
 	int thread_index;
@@ -810,11 +810,11 @@ exception_t* serpent_parallel_encrypt(key256_t* user_key, block128* blocks, int 
 }
 
 
-exception_t* serpent_serial_decrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_serial_decrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_serial_decrypt()";
 	exception_t* exception;
-	uint32* subkey;
-	//uint32 a, b, c, d, e;
+	uint32_t* subkey;
+	//uint32_t a, b, c, d, e;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -849,10 +849,10 @@ exception_t* serpent_serial_decrypt(key256_t* user_key, block128* blocks, int bl
 }
 
 
-exception_t* serpent_serial_encrypt(key256_t* user_key, block128* blocks, int block_count) {
+exception_t* serpent_serial_encrypt(key256_t* user_key, block128_t* blocks, int block_count) {
 	char* function_name = "serpent_serial_encrypt()";
 	exception_t* exception;
-	uint32* subkey;
+	uint32_t* subkey;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -887,12 +887,12 @@ exception_t* serpent_serial_encrypt(key256_t* user_key, block128* blocks, int bl
 }
 
 
-exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey) {
+exception_t* serpent_init_subkey(key256_t* user_key, uint32_t** subkey) {
 	char* function_name = "serpent_init_subkey()";
 	const int PREKEY_SIZE = 140;
 	exception_t* exception;
-	uint32* genkey;
-	uint32 a, b, c, d, e;
+	uint32_t* genkey;
+	uint32_t a, b, c, d, e;
 
 	// Validate parameters.
 	if ( user_key == NULL ) {
@@ -903,14 +903,14 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey) {
 	}
 
 	// Allocate space for genkey.
-	genkey = (uint32*)malloc(sizeof(uint32) * PREKEY_SIZE);
+	genkey = (uint32_t*)malloc(sizeof(uint32_t) * PREKEY_SIZE);
 	if ( genkey == NULL ) {
 		return exception_throw("Unable to allocate genkey.", function_name);
 	}
 
 	// Assign user_key to the genkey; making sure to properly little-endianized the user key.
 	for ( int i = 0; i < 8; i++ ) {
-		uint32 word;
+		uint32_t word;
 		// Get the key value.
 		exception = key256_get_word(user_key, i, &word);
 		if ( exception != NULL ) {
@@ -929,7 +929,7 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey) {
 
 	// Generate the prekey by the following affine recurrence.
 	genkey += 8;
-	uint32 t = genkey[-1];
+	uint32_t t = genkey[-1];
 	for ( int i = 0; i < 132; ++i ) {
 		genkey[i] = t = rotl_fixed(genkey[i-8] ^ genkey[i-5] ^ genkey[i-3] ^ t ^ 0x9E3779B9 ^ i, 11);
 	}
@@ -971,7 +971,7 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey) {
 }
 
 
-exception_t* serpent_free_subkey(uint32* subkey) {
+exception_t* serpent_free_subkey(uint32_t* subkey) {
 	char* function_name = "serpent_free_subkey()";
 
 	// Validate parameters.
@@ -988,96 +988,3 @@ exception_t* serpent_free_subkey(uint32* subkey) {
 }
 
 
-exception_t* key256_t_get_word(key256_t* key, int index, uint32* word) {
-	char* function_name = "key256_t_get_word()";
-
-	// Validate parameters.
-	if ( key == NULL ) {
-		return exception_throw("key was NULL.", function_name);
-	}
-	if ( word == NULL ) {
-		return exception_throw("word was NULL.", function_name);
-	}
-	if ( index < 0 || index > 7 ) {
-		return exception_throw("Invalid index.", function_name);
-	}
-
-	// Set output parameter.
-	switch(index) {
-	case 0:
-		(*word) = key->key0.x0;
-		break;
-	case 1:
-		(*word) = key->key0.x1;
-		break;
-	case 2:
-		(*word) = key->key0.x2;
-		break;
-	case 3:
-		(*word) = key->key0.x3;
-		break;
-	case 4:
-		(*word) = key->key1.x0;
-		break;
-	case 5:
-		(*word) = key->key1.x1;
-		break;
-	case 6:
-		(*word) = key->key1.x2;
-		break;
-	case 7:
-		(*word) = key->key1.x3;
-		break;
-	default:
-		return exception_throw("Unknown index.", function_name);
-	}
-
-	// Return success.
-	return NULL;
-}
-
-
-exception_t* key256_t_set_word(key256_t* key, int index, uint32 word) {
-	char* function_name = "key256_t_set_word()";
-
-	// Validate parameters.
-	if ( key == NULL ) {
-		return exception_throw("key was NULL.", function_name);
-	}
-	if ( index < 0 || index > 7 ) {
-		return exception_throw("Invalid index.", function_name);
-	}
-
-	// Set output parameter.
-	switch(index) {
-	case 0:
-		key->key0.x0 = word;
-		break;
-	case 1:
-		key->key0.x1 = word;
-		break;
-	case 2:
-		key->key0.x2 = word;
-		break;
-	case 3:
-		key->key0.x3 = word;
-		break;
-	case 4:
-		key->key1.x0 = word;
-		break;
-	case 5:
-		key->key1.x1 = word;
-		break;
-	case 6:
-		key->key1.x2 = word;
-		break;
-	case 7:
-		key->key1.x3 = word;
-		break;
-	default:
-		return exception_throw("Unknown index.", function_name);
-	}
-
-	// Return success.
-	return NULL;
-}

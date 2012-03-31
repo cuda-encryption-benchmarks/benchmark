@@ -164,7 +164,7 @@ exception_t* arguments_validate(int argc, char* argv[]) {
 
 int main( int argc, char* argv[] ) {
 	exception_t* exception;
-	block128* blocks;
+	block128_t* blocks;
 	key256_t key;
 	struct timespec clock_begin;
 	struct timespec clock_end;

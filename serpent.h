@@ -31,19 +31,19 @@
 /**	Run the specified array of 128-bit blocks through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent(key256_t* user_key, block128* blocks, int block_count, enum mode mode, enum encryption encryption);
+exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption);
 
 
 /**	Decrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_cuda_decrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Encrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_cuda_encrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Private inner function to prevent linking errors because nvcc does not like external libraries.
@@ -52,7 +52,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128* blocks, int bloc
 #ifdef __cplusplus
 extern "C"
 #endif
-int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count);
+int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count);
 
 
 /**	Private inner function to prevent linking errors because nvcc does not like external libraries.
@@ -61,56 +61,56 @@ int serpent_cuda_decrypt_cu(uint32* subkey, block128* blocks, int block_count);
 #ifdef __cplusplus
 extern "C"
 #endif
-int serpent_cuda_encrypt_cu(uint32* subkey, block128* blocks, int block_count);
+int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count);
 
 
 /**	Decrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent_parallel_decrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_parallel_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Private function to decrypt a single block of serpent.
  *	@return	NULL on success, exception_t* on failure. 
  */
-exception_t* serpent_decrypt_block(block128* block, uint32* subkey);
+exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey);
 
 
 /**	Private function to encrypt a single block of serpent.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_encrypt_block(block128* block, uint32* subkey);
+exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey);
 
 
 /**	Encrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent_parallel_encrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Decrypt the specified array of 128-bit blocks serially through the Serpent encryption algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent_serial_decrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_serial_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Encrypt the specified array of 128-bit blocks serially through the Serpent encryption algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_serial_encrypt(key256_t* user_key, block128* blocks, int block_count);
+exception_t* serpent_serial_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
 /**	Private function that generates the subkey for the Serpent encryption algorithm.
- *	@out	subkey: Pointer to an array of uint32 that represent the subkeys for the serpent algorithm.
+ *	@out	subkey: Pointer to an array of uint32_t that represent the subkeys for the serpent algorithm.
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent_init_subkey(key256_t* user_key, uint32** subkey);
+exception_t* serpent_init_subkey(key256_t* user_key, uint32_t** subkey);
 
 
 /**	Private function that serves as a reminder to free the subkey.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_free_subkey(uint32* subkey);
+exception_t* serpent_free_subkey(uint32_t* subkey);
 
 
 #endif // serpent_H

@@ -1,9 +1,9 @@
 #include "mirror_bytes.h"
 
 
-exception_t* mirror_bytes32(uint32 x, uint32* out) { 
+exception_t* mirror_bytes32(uint32_t x, uint32_t* out) { 
 	char* function_name = "mirror_bytes32()";
-	uint32 n;
+	uint32_t n;
 	
 	// Validate parameters.
 	if ( out == NULL ) {

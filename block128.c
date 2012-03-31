@@ -1,9 +1,9 @@
 #include "block128.h"
 
 
-exception_t* block128_read(int fd, block128* block) {
+exception_t* block128_read(int fd, block128_t* block) {
 	char* function_name = "block128_read";
-	uint32 buffer;
+	uint32_t buffer;
 
 	// Validate parameters.
 	if ( block == NULL ) {
@@ -37,7 +37,7 @@ exception_t* block128_read(int fd, block128* block) {
 }
 
 
-exception_t* block128_write(int fd, block128* block) {
+exception_t* block128_write(int fd, block128_t* block) {
 	char* function_name = "block128_write";
 
 	// Validate parameters.
