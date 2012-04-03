@@ -10,6 +10,8 @@ cfiles =	main \
 		file \
 		key \
 		mirror_bytes \
+		report/report \
+		report/section \
 		serpent
 cufiles = 	cuda_extension \
 		serpent_cu # Linker does not like files with the same name.
