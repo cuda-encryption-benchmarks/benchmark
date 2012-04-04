@@ -13,6 +13,7 @@
 #include "file.h"
 #include "mirror_bytes.h"
 #include "serpent.h"
+//#include "report/report.h" // DEBUG
 #include "typedef.h"
 
 
@@ -175,6 +176,23 @@ int main( int argc, char* argv[] ) {
 	enum algorithm algorithm;
 	enum encryption encryption;
 	enum mode mode;
+
+
+	// DEBUG
+	/*
+	report_t report;
+	exception = report_init(&report);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
+	exception = report_free(&report);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	} */
+	
 
 	// Validate the arguments.
 	exception = arguments_validate(argc, argv);

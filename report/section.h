@@ -3,13 +3,23 @@
 #define section_H
 
 
-#include "benchmark_data.h"
+#include "subsection.h"
 #include "../ccc/ccc.h"
 #include "../typedef.h"
 
 
-// The number of runs to collect data for in a section.
-#define SECTION_ITERATION_COUNT 10
+// The number of subsections in the section class.
+// Note the naming convention. The prefix "SECTION" designates
+// the structure that the #define is in, while the suffix
+// "SUBSECTION_COUNT" denotes the name of the property.
+// It's really quite logical once your head stops hurting.
+#define SECTION_SUBSECTION_COUNT 3
+// The section for CUDA data.
+#define SECTION_SUBSECTION_CUDA 2
+// The section for parallel data.
+#define SECTION_SUBSECTION_PARALLEL 1
+// The section for serial data.
+#define SECTION_SUBSECTION_SERIAL 0
 
 
 // An abstraction which represents a section of the report.
@@ -20,19 +30,16 @@
 typedef struct {
 	// The algorithm run by the specified section.
 	enum algorithm algorithm;
-	// The mode that the algorithm is run in.
-	enum mode mode;
-	// The data gathered during encryption.
-	benchmark_data_t data_encrypt[SECTION_ITERATION_COUNT];
-	// The data gathered during decryption.
-	benchmark_data_t data_decrypt[SECTION_ITERATION_COUNT];
+	// The subsections of the report, altogether containing the different modes
+	// the algorithm is run in.
+	subsection_t subsections[SECTION_SUBSECTION_COUNT];
 } section_t;
 
 
-/**	Iniitialize the specified section_t with the specified algorithm and encryption mode.
+/**	Iniitialize the specified section_t with the specified algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* section_init(section_t* section, enum algorithm algorithm, enum mode mode);
+exception_t* section_init(section_t* section, enum algorithm algorithm);
 
 
 /**	Uninitialize the specified section_t.

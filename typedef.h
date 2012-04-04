@@ -1,6 +1,10 @@
 #ifndef typedef_H
 #define typedef_H
 
+
+#include "ccc/ccc.h"
+
+
 /**	Enumeration representing the different encryption algorithms.
  */
 enum algorithm {
@@ -66,5 +70,6 @@ exception_t* arguments_parse_mode(char* argument, enum mode* mode);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* arguments_validate(int argc, char* argv[]);
+
 
 #endif // typedef_H

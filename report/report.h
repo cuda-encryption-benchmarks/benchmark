@@ -5,12 +5,15 @@
 
 #include "section.h"
 #include "../ccc/ccc.h"
+#include "../typedef.h"
 
 
 // The number of sections in the report.
 // Section initialization will need to be hardcoded
 // in the init function.
 #define REPORT_SECTION_COUNT 1
+// The section of the report for the Serpent algorithm.
+#define REPORT_SECTION_SERPENT 0
 
 
 // A structure that represents the report for the CUDA Benchmarking program.
