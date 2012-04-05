@@ -187,6 +187,12 @@ int main( int argc, char* argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 
+	exception = report_write(&report);
+	if ( exception != NULL ) {
+		exception_catch(exception);
+		exit(EXIT_FAILURE);
+	}
+
 	exception = report_free(&report);
 	if ( exception != NULL ) {
 		exception_catch(exception);
