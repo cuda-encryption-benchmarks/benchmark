@@ -18,6 +18,10 @@
 #include "../typedef.h"
 
 
+// The maximum length of the report basepath string.
+#define REPORT_BASEPATH_LENGTH_MAX 50
+// The maximum length of the report filename.
+#define REPORT_FILENAME_LENGTH_MAX 10
 // The number of sections in the report.
 // Section initialization will need to be hardcoded
 // in the init function.
@@ -30,6 +34,12 @@
 typedef struct {
 	// An array containing the sections of the report.
 	section_t sections[REPORT_SECTION_COUNT];
+	// The file for the report to write to.
+	FILE* file;
+	// The base path for the report's documents.
+	char basepath[REPORT_BASEPATH_LENGTH_MAX];
+	// The name of the report without a file extension.
+	char filename[REPORT_FILENAME_LENGTH_MAX];
 } report_t;
 
 
@@ -39,7 +49,16 @@ typedef struct {
 exception_t* report_init(report_t* report);
 
 
-/**	Uninitializes the members of the specified report_t.
+/**	Private function of report_init() that creates the appropriate directory structure for the specified report and initializes
+ *	report->basepath as a side-effect.
+ *	@out	report_basepath: Modifies the specified array of characters to contain the filepath for the specified report.
+ *		The array should be at least 40 characters long.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_init_create_directories(report_t* report);
+
+
+/**	Uninitializes the members of the specified report_t and frees any related resources.
  *	@return NULL on success, exception_t* on failure.
  */
 exception_t* report_free(report_t* report);
@@ -51,12 +70,10 @@ exception_t* report_free(report_t* report);
 exception_t* report_write(report_t* report);
 
 
-/**	Private function of report_write() that creates the appropriate directory structure for the specified report.
- *	@out	report_filepath: Modifies the specified array of characters to contain the filepath for the specified report.
- *		The array should be at least 40 characters long.
+/**	Private function of report_write() that compiles a LaTeX document.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* report_write_create_directories(report_t* report, char* report_filepath);
+exception_t* report_write_compile_latex(report_t* report);
 
 
 #endif // report_H

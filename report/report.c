@@ -3,6 +3,7 @@
 
 exception_t* report_init(report_t* report) {
 	char* function_name = "report_init()";
+	char filepath[REPORT_BASEPATH_LENGTH_MAX + REPORT_FILENAME_LENGTH_MAX + 3];
 	exception_t* exception;
 
 	// Validate parameters.
@@ -10,7 +11,26 @@ exception_t* report_init(report_t* report) {
 		return exception_throw("report was NULL.", function_name);
 	}
 
-	// Instantiate each section of the report.
+	// Set the report name.
+	strcpy(report->filename, "report");
+
+	// Create the directory structure.
+	report->basepath[0] = '\0';
+	exception = report_init_create_directories(report);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	
+	// Open the report file.
+	strcat(filepath, report->basepath);
+	strcat(filepath, report->filename);
+	strcat(filepath, ".tex");
+	report->file = fopen(filepath, "w");
+	if ( report->file == NULL ) {
+		return exception_throw("Unable to create report file.", function_name);
+	}
+
+	// Initialize each section of the report.
 	// Serpent section.
 	exception = section_init(&(report->sections[REPORT_SECTION_SERPENT]), SERPENT);
 	if ( exception != NULL ) {
@@ -22,52 +42,8 @@ exception_t* report_init(report_t* report) {
 }
 
 
-exception_t* report_free(report_t* report) {
-	char* function_name = "report_free()";
-	exception_t* exception;
-	int i;
-
-	// Validate parameters.
-	if ( report == NULL ) {
-		return exception_throw("report was NULL.", function_name);
-	}
-
-	// Free each section of the report.
-	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
-		exception = section_free(&(report->sections[i]));
-		if ( exception != NULL ) {
-			return exception_append(exception, function_name);
-		}
-	}
-
-	// Return success.
-	return NULL;
-}
-
-
-exception_t* report_write(report_t* report) { 
-	char* function_name = "report_write()";
-	exception_t* exception;
-	char report_filepath[50];
-
-	// Validate parameters.
-	if ( report == NULL ) {
-		return exception_throw("report was NULL.", function_name);
-	}
-
-	// Create and get the report directory path.
-	exception = report_write_create_directories(report, report_filepath);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-
-	// Return not implemented.
-	return exception_throw("Not implemented.", function_name);
-}
-
-
-exception_t* report_write_create_directories(report_t* report, char* report_filepath) {
-	char* function_name = "report_write_create_directories()";
+exception_t* report_init_create_directories(report_t* report) {
+	char* function_name = "report_init_create_directories()";
 	struct stat stats;
 	time_t time_raw;
 	struct tm time_current;
@@ -77,13 +53,10 @@ exception_t* report_write_create_directories(report_t* report, char* report_file
 	if ( report == NULL ) {
 		return exception_throw("report was NULL.", function_name);
 	}
-	if ( report_filepath == NULL ) {
-		return exception_throw("report_filepath was NULL.", function_name);
-	}
 
 	// Make/ensure creation of results directory.
-	strcpy(report_filepath, "results");
-	if ( stat(report_filepath, &stats) == 0 ) { // File exists.
+	strcpy(report->basepath, "results");
+	if ( stat(report->basepath, &stats) == 0 ) { // File exists.
 		// Check if the file is a directory.
 		if ( !(S_ISDIR(stats.st_mode)) ) {
 			return exception_throw("The results file exists and is not a directory.", function_name);
@@ -92,7 +65,7 @@ exception_t* report_write_create_directories(report_t* report, char* report_file
 	else { // Stat failed.
 		if ( errno == ENOENT ) { // File does not exist.
 			// Create the directory.
-			if ( mkdir(report_filepath, 0700) == -1 ) {
+			if ( mkdir(report->basepath, 0700) == -1 ) {
 				perror(NULL);
 				return exception_throw("Unable to create results directory.", function_name);
 			}
@@ -120,12 +93,12 @@ exception_t* report_write_create_directories(report_t* report, char* report_file
 	}
 
 	// Copy the string representation of the current time onto the report filepath.
-	strcat(report_filepath, "/");
-	strcat(report_filepath, time_buffer);
-	strcat(report_filepath, "/");
+	strcat(report->basepath, "/");
+	strcat(report->basepath, time_buffer);
+	strcat(report->basepath, "/");
 
 	// Create the report directory.
-	if ( mkdir(report_filepath, 0700) == -1 ) {
+	if ( mkdir(report->basepath, 0700) == -1 ) {
 		perror(NULL);
 		return exception_throw("Unable to create report directory.", function_name);
 	}
@@ -133,3 +106,68 @@ exception_t* report_write_create_directories(report_t* report, char* report_file
 	// Return success.
 	return NULL;
 }
+
+
+exception_t* report_free(report_t* report) {
+	char* function_name = "report_free()";
+	exception_t* exception;
+	int i;
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+
+	// Invalidate the basepath.
+	report->basepath[0] = '\0';
+
+	// Invalidate the filename.
+	report->filename[0] = '\0';
+
+	// Free each section of the report.
+	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
+		exception = section_free(&(report->sections[i]));
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+	// Close the report file.
+	if ( fclose(report->file) == EOF ) {
+		return exception_throw("Unable to close report file.", function_name);
+	}	
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* report_write(report_t* report) { 
+	char* function_name = "report_write()";
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+
+	// Write output. DEBUG
+	fprintf(report->file, "\\documentclass{article}\n\n");
+	fprintf(report->file, "\\usepackage{amsmath}\n\n");
+	fprintf(report->file, "\\title{CUDA Benchmarking Report}\n\\author{Automatically Generated}\n\n");
+	fprintf(report->file, "\\begin{document}\n\n");
+	fprintf(report->file, "\\maketitle\n\n");
+	fprintf(report->file, "\\end{document}\n");
+
+	// Return not implemented.
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+exception_t* report_write_compile_latex(report_t* report) {
+	char* function_name = "report_write_compile_latex()";
+
+	return exception_throw("Not implemented.", function_name);
+}
+
+
+
