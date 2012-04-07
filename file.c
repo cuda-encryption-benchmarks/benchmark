@@ -33,7 +33,7 @@ exception_t* file_read_metadata(file_t* file) {
 
 	// Delete the metadata.
 	file->size -= sizeof(file->padding);
-	if ( ftruncate(file->fd, (int)(file->size)) == -1 ) {
+	if ( ftruncate64(file->fd, (off64_t)(file->size)) == -1 ) {
 		perror(NULL);
 		return exception_throw("Unable to truncate metadata.", function_name);
 	}
@@ -140,7 +140,7 @@ exception_t* file_free(file_t* file) {
 	}
 	else if ( file->flag == ENCRYPTED ) {
 		// Truncate the file padding.
-		if ( ftruncate(file->fd, (int)(file->size - file->padding)) == -1 ) {
+		if ( ftruncate64(file->fd, (off64_t)(file->size - (off64_t)file->padding)) == -1 ) {
 			return exception_throw("Unable to truncate file.", function_name);
 		}
 	}
@@ -291,7 +291,7 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	const int BUFFER_SIZE_MAX = sizeof(block128_t) * 512;
 	char* function_name = "file_write()";
 	uint32_t* buffer;
-	int blocks_written_total;
+	long long blocks_written_total;
 	int buffer_size;
 	int blocks_to_write;
 	int bytes_written;
@@ -336,10 +336,11 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	// Write blocks.
 	blocks_written_total = 0;
 	while ( blocks_written_total < block_count ) {
-		// Calculate number of blocks to write.
+		// Calculate number of blocks to write and re-adjust buffer_size if necessary.
 		blocks_to_write = buffer_size / sizeof(block128_t);
 		if ( blocks_to_write > block_count - blocks_written_total ) {
 			blocks_to_write = block_count - blocks_written_total;
+			buffer_size = blocks_to_write * sizeof(block128_t);
 		}
 
 		// Copy block data to the buffer.

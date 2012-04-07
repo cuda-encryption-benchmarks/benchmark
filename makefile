@@ -28,13 +28,12 @@ version = ${major_number}.${minor_number}.${release_number}
 name = benchmark
 
 # Perform default functionality.
-default: compile libccc.so create clean done
+default: compile create clean done
 
 
 # Compile the library (ccc).
 libccc.so:
-	@cd ccc; make; cd ../
-	@mv ccc/libccc.so.0.0.1 ./libccc.so
+	@cd ccc; make; make install; cd ../
 
 # Clean the directory.
 clean:
@@ -57,10 +56,14 @@ compile:
 # Create the executable.
 create:
 	@echo "  Creating ${name}."
-	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib/ ${libraries} -o ${name} *.o
+	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib64/ ${libraries} -o ${name} *.o
 
 
 # Print the conclusion.
 done:
 	@echo "  Done."
 
+# Install the Cline's C Compendium
+# Otherwise executable won't load the shared object library :(
+install: libccc.so
+	@echo "  Done."

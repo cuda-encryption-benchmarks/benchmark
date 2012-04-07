@@ -35,7 +35,7 @@ typedef struct {
 	// The size of the file in bytes.
 	long long size;
 	// The number of bytes padded onto the end of the file.
-	int padding;
+	long long padding;
 	// File descriptor for Linux file I/O.
 	int fd;
 	// Whether the file is encrypted or unencrypted.

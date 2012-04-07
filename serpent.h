@@ -25,7 +25,7 @@
 // Rotate the bits in the specified number x right by the specified number n.
 #define rotr_fixed(x, n)   (((x) >> (n)) | ((x) << (32 - (n))))
 // Arbitrary amount of memory to subtract from total free memory.
-#define SERPENT_CUDA_MEMORY_BUFFER 600000
+#define SERPENT_CUDA_MEMORY_BUFFER 400000000
 
 
 /**	Run the specified array of 128-bit blocks through the Serpent encryption algorithm.
