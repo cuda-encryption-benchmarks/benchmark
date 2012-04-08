@@ -9,6 +9,7 @@
 
 
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -75,6 +76,12 @@ exception_t* report_write(report_t* report);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write_compile_latex(report_t* report);
+
+
+/**	Private function of report_write() that appends system information to the time.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_system_information(report_t* report);
 
 
 #endif // report_H

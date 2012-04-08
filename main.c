@@ -197,7 +197,7 @@ int main( int argc, char* argv[] ) {
 	if ( exception != NULL ) {
 		exception_catch(exception);
 		exit(EXIT_FAILURE);
-	}   */
+	} */
 
 	// Validate the arguments.
 	exception = arguments_validate(argc, argv);

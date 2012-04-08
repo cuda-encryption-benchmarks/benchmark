@@ -81,12 +81,12 @@ exception_t* subsection_write(subsection_t* subsection, FILE* file) {
 
 	// Write a table of the subsection data.
 	fprintf(file, "\\begin{tabular}[c]{r|r|r|r}\n");
-	fprintf(file, "Iteration \\# & Elapsed Seconds & Elapsed Nanoseconds & Global Memory Used \\\\\\hline");
+	fprintf(file, "Iteration \\# & Elapsed Seconds & Elapsed Nanoseconds & Global Memory Used \\\\\n\\hline\n");
 	for ( i = 0; i < SUBSECTION_ITERATION_COUNT; i++ ) {
-		fprintf(file, "%i & %li & %li & %lli \\\\", i + 1, subsection->data_encrypt[i].time_elapsed.tv_sec, subsection->data_encrypt[i].time_elapsed.tv_nsec, subsection->data_encrypt[i].buffer_size);
+		fprintf(file, "%i & %li & %li & %lli \\\\\n", i + 1, subsection->data_encrypt[i].time_elapsed.tv_sec, subsection->data_encrypt[i].time_elapsed.tv_nsec, subsection->data_encrypt[i].buffer_size);
 	}
 	fprintf(file, "\\hline\n");
-	fprintf(file, "\\end{tabular}");
+	fprintf(file, "\\end{tabular}\n");
 
 	// Return success.
 	return NULL;
