@@ -144,6 +144,7 @@ exception_t* report_free(report_t* report) {
 
 exception_t* report_write(report_t* report) { 
 	char* function_name = "report_write()";
+	exception_t* exception;
 
 	// Validate parameters.
 	if ( report == NULL ) {
@@ -158,6 +159,17 @@ exception_t* report_write(report_t* report) {
 	fprintf(report->file, "\\maketitle\n\n");
 	fprintf(report->file, "\\end{document}\n");
 
+	// Flush the file buffer.
+	if ( fflush(report->file) == EOF ) {
+		return exception_throw("Unable to flush before write.", function_name);
+	}
+
+	// Compile the report into LaTeX.
+	exception = report_write_compile_latex(report);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
 	// Return not implemented.
 	return exception_throw("Not implemented.", function_name);
 }
@@ -165,9 +177,125 @@ exception_t* report_write(report_t* report) {
 
 exception_t* report_write_compile_latex(report_t* report) {
 	char* function_name = "report_write_compile_latex()";
+	char filename_dvi[REPORT_FILENAME_LENGTH_MAX + 4];
+	char filename_ps[REPORT_FILENAME_LENGTH_MAX + 3];
+	char filename_tex[REPORT_FILENAME_LENGTH_MAX + 4];
+	int child_id;
+	int child_status;
+	int exit_status;
+	int i;
+
+	// Move into the report directory.
+	if ( chdir(report->basepath) == -1 ) {
+		perror(NULL);
+		return exception_throw("Unable to chdir into report directory.", function_name);
+	}
+
+	// Build the full filename.
+	strcpy(filename_tex, report->filename);
+	strcat(filename_tex, ".tex");
+
+	// Compile the document in latex (twice).
+	for ( i = 0; i < 2; i++ ) {
+		// Fork the child.
+		child_id = fork();
+		if ( child_id == -1 ) {
+			return exception_throw("Unable to fork latex child.", function_name);
+		}
+
+		// Exec into latex.
+		if ( child_id == 0 ) {
+			// Execute latex.
+			execlp("latex", "latex", "-interaction=nonstopmode", filename_tex, (char*)'\0');
+			return exception_throw("Unable to exec into latex.", function_name);
+		}
+
+		// Wait for the child.
+		if ( waitpid(child_id, &child_status, 0) == -1 ) {
+			return exception_throw("Unable to wait for latex child.", function_name);
+		}
+
+		// Check the child exit status.
+		if ( WIFEXITED(child_status) ) {
+			exit_status = WEXITSTATUS(child_status);
+			if ( exit_status == EXIT_FAILURE ) {
+				return exception_throw("latex child returned EXIT_FAILURE.", function_name);
+			}
+		}
+		else { 
+			return exception_throw("latex child did not exit properly.", function_name);
+		}
+	}
+
+	// Build the DVI filename.
+	strcpy(filename_dvi, report->filename);
+	strcat(filename_dvi, ".dvi");
+
+	// Build the PS filename.
+	strcpy(filename_ps, report->filename);
+	strcat(filename_ps, ".ps");
+
+	// Convert the DVI file into a PS file.
+	child_id = fork();
+	if ( child_id == -1 ) {
+		return exception_throw("Unable to fork dvips child.", function_name);
+	}
+	if ( child_id == 0 ) {
+		// Execute dvips.
+		execlp("dvips", "dvips", "-R", "-Poutline", "-t", "letter", filename_dvi, "-o", filename_ps, (char*)'\0');
+		return exception_throw("Unable to exec into dvips.", function_name);
+	}
+
+	// Wait for the dvips child.
+	if ( waitpid(child_id, &child_status, 0) == -1 ) {
+		return exception_throw("Unable to wait for dvips child.", function_name);
+	}
+
+	// Check the child exit status.
+	if ( WIFEXITED(child_status) ) {
+		exit_status = WEXITSTATUS(child_status);
+		if ( exit_status == EXIT_FAILURE ) {
+			return exception_throw("dvips child returned EXIT_FAILURE.", function_name);
+		}
+	}
+	else { 
+		return exception_throw("dvips child did not exit properly.", function_name);
+	}
+
+	// Convert the PS file into a PDF file.
+	child_id = fork();
+	if ( child_id == -1 ) {
+		return exception_throw("Unable to fork ps2pdf child.", function_name);
+	}
+	if ( child_id == 0 ) {
+		// Execute ps2pdf.
+		execlp("ps2pdf", "ps2pdf", filename_ps, (char*)'\0');
+		return exception_throw("Unable to exec into ps2pdf.", function_name);
+	}
+
+	// Wait for the ps2pdf child.
+	if ( waitpid(child_id, &child_status, 0) == -1 ) {
+		return exception_throw("Unable to wait for ps2pdf child.", function_name);
+	}
+
+	// Check the child exit status.
+	if ( WIFEXITED(child_status) ) {
+		exit_status = WEXITSTATUS(child_status);
+		if ( exit_status == EXIT_FAILURE ) {
+			return exception_throw("ps2pdf child returned EXIT_FAILURE.", function_name);
+		}
+	}
+	else { 
+		return exception_throw("ps2pdf child did not exit properly.", function_name);
+	}
+
+	// Move back into the original directory.
+	if ( chdir("../../") == -1 ) {
+		perror(NULL);
+		return exception_throw("Unable to chdir into original directory.", function_name);
+	}
 
 	return exception_throw("Not implemented.", function_name);
 }
-
 
 
