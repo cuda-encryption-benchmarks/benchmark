@@ -58,7 +58,7 @@ compile:
 # Create the executable.
 create:
 	@echo "  Creating ${name}."
-	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib64/ ${libraries} -o ${name} *.o
+	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib64/ -L/usr/local/cuda/lib/ ${libraries} -o ${name} *.o
 
 
 # Print the conclusion.

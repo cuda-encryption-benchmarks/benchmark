@@ -723,12 +723,20 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		return -1;
 	}
 	free_global_memory -= SERPENT_CUDA_MEMORY_BUFFER; // Magic number.
+	#if defined(__LP64__) || defined(_LP64)
 	fprintf(stderr, "Total global memory: %li.\n", total_global_memory);
+	#else
+	fprintf(stderr, "Total global memory: %i.\n", total_global_memory);
+	#endif
 
 	// Calculate number of blocks per thread.
 	int blocks_per_kernel = free_global_memory / sizeof(block128_t);
 	int blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
+	#if defined(__LP64__) || defined(_LP64)
 	fprintf(stderr, "Blocks global memory: %li.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
+	#else
+	fprintf(stderr, "Blocks global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
+	#endif
 
 	// Allocate a buffer for the blocks on the GPU.
 	cuda_error = cudaMalloc( (void**)&cuda_blocks, (int)(sizeof(block128_t) * blocks_per_kernel) );
@@ -861,12 +869,20 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		return -1;
 	}
 	free_global_memory -= SERPENT_CUDA_MEMORY_BUFFER; // Magic number.
+	#if defined(__LP64__) || defined(_LP64)
 	fprintf(stderr, "Total global memory: %li.\n", total_global_memory);
+	#else
+	fprintf(stderr, "Total global memory: %i.\n", total_global_memory);
+	#endif
 
 	// Calculate number of blocks per thread.
 	int blocks_per_kernel = free_global_memory / sizeof(block128_t);
 	int blocks_per_thread = (blocks_per_kernel / multiprocessor_count) / thread_count;
+	#if defined(__LP64__) || defined(_LP64)
 	fprintf(stderr, "Free global memory: %li.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
+	#else
+	fprintf(stderr, "Free global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
+	#endif
 	fprintf(stderr, "Blocks per thread: %i.\n", blocks_per_thread);
 
 	// Allocate a buffer for the blocks on the GPU.
