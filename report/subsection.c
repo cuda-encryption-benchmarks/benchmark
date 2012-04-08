@@ -58,7 +58,37 @@ exception_t* subsection_free(subsection_t* subsection) {
 
 exception_t* subsection_write(subsection_t* subsection, FILE* file) {
 	char* function_name = "subsection_write()";
+	char mode_name[50];
+	exception_t* exception;
+	int i;
 
-	return exception_throw("Not implemented.", function_name);
+	// Validate parameters.
+	if ( subsection == NULL ) {
+		return exception_throw("subsection was NULL.", function_name);
+	}
+	if ( file == NULL ) {
+		return exception_throw("file was NULL.", function_name);
+	}
+
+	// Get the mode of the subsection.
+	exception = mode_get_name(subsection->mode, mode_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Write subsection head.
+	fprintf(file, "\\subsubsection{%s}\n", mode_name);
+
+	// Write a table of the subsection data.
+	fprintf(file, "\\begin{tabular}[c]{r|r|r|r}\n");
+	fprintf(file, "Iteration \\# & Elapsed Seconds & Elapsed Nanoseconds & Global Memory Used \\\\\\hline");
+	for ( i = 0; i < SUBSECTION_ITERATION_COUNT; i++ ) {
+		fprintf(file, "%i & %li & %li & %lli \\\\", i + 1, subsection->data_encrypt[i].time_elapsed.tv_sec, subsection->data_encrypt[i].time_elapsed.tv_nsec, subsection->data_encrypt[i].buffer_size);
+	}
+	fprintf(file, "\\hline\n");
+	fprintf(file, "\\end{tabular}");
+
+	// Return success.
+	return NULL;
 }
 

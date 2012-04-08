@@ -6,10 +6,12 @@ libraries = -lccc -lcuda -lcudart -lgomp
 
 cfiles =	main \
 		aes \
+		algorithm \
 		block128 \
 		file \
 		key \
 		mirror_bytes \
+		mode \
 		report/report \
 		report/section \
 		report/subsection \

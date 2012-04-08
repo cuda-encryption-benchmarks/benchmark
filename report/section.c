@@ -20,7 +20,7 @@ exception_t* section_init(section_t* section, enum algorithm algorithm) {
 		return exception_append(exception, function_name);
 	}
 	// Parallel.
-	exception = subsection_init(&(section->subsections[SECTION_SUBSECTION_SERIAL]), PARALLEL);
+	exception = subsection_init(&(section->subsections[SECTION_SUBSECTION_PARALLEL]), PARALLEL);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -63,7 +63,36 @@ exception_t* section_free(section_t* section) {
 
 exception_t* section_write(section_t* section, FILE* file) {
 	char* function_name = "section_write()";
+	char algorithm_name[50];
+	exception_t* exception;
+	int i;
 
-	return exception_throw("Not implemented.", function_name);
+	// Validate parameters.
+	if ( section == NULL ) {
+		return exception_throw("section was NULL.", function_name);
+	}
+	if ( file == NULL ) {
+		return exception_throw("file was NULL.", function_name);
+	}
+
+	// Get algorithm name.
+	exception = algorithm_get_name(section->algorithm, algorithm_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Write section head.
+	fprintf(file, "\\subsection{%s}\n", algorithm_name);
+
+	// Write subsection data.
+	for ( i = 0; i < SECTION_SUBSECTION_COUNT; i++ ) {
+		exception = subsection_write(&(section->subsections[i]), file);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+	// Return success.
+	return NULL;
 }
 

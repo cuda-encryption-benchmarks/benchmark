@@ -145,18 +145,36 @@ exception_t* report_free(report_t* report) {
 exception_t* report_write(report_t* report) { 
 	char* function_name = "report_write()";
 	exception_t* exception;
+	int i;
 
 	// Validate parameters.
 	if ( report == NULL ) {
 		return exception_throw("report was NULL.", function_name);
 	}
 
-	// Write output. DEBUG
+	// Write document head.
 	fprintf(report->file, "\\documentclass{article}\n\n");
 	fprintf(report->file, "\\usepackage{amsmath}\n\n");
 	fprintf(report->file, "\\title{CUDA Benchmarking Report}\n\\author{Automatically Generated}\n\n");
 	fprintf(report->file, "\\begin{document}\n\n");
 	fprintf(report->file, "\\maketitle\n\n");
+
+	// Write introduction section. TODOO
+	fprintf(report->file, "\\section{Introduction}\n");
+
+	// Write subsections.
+	fprintf(report->file, "\n\\section{Results}\n");
+	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
+		exception = section_write(&(report->sections[i]), report->file);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+	// Write conclusion section. TODOO
+	fprintf(report->file, "\n\\section{Conclusions}\n");
+	
+	// Write document tail.
 	fprintf(report->file, "\\end{document}\n");
 
 	// Flush the file buffer.
@@ -170,8 +188,8 @@ exception_t* report_write(report_t* report) {
 		return exception_append(exception, function_name);
 	}
 
-	// Return not implemented.
-	return exception_throw("Not implemented.", function_name);
+	// Return success.
+	return NULL;
 }
 
 
@@ -295,7 +313,8 @@ exception_t* report_write_compile_latex(report_t* report) {
 		return exception_throw("Unable to chdir into original directory.", function_name);
 	}
 
-	return exception_throw("Not implemented.", function_name);
+	// Return success.
+	return NULL;
 }
 
 

@@ -4,6 +4,7 @@
 
 
 #include "subsection.h"
+#include "../algorithm.h"
 #include "../ccc/ccc.h"
 #include "../typedef.h"
 

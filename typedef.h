@@ -2,16 +2,9 @@
 #define typedef_H
 
 
+#include "algorithm.h"
 #include "ccc/ccc.h"
-
-
-/**	Enumeration representing the different encryption algorithms.
- */
-enum algorithm {
-	AES,
-	SERPENT,
-	TWOFISH
-};
+#include "mode.h"
 
 
 /**	Enumeration representing whether to encrypt or decrypt the file.
@@ -19,15 +12,6 @@ enum algorithm {
 enum encryption {
 	DECRYPT,
 	ENCRYPT
-};
-
-
-/**	Enumeration representing how to run the algorithm.
- */
-enum mode {
-	CUDA,
-	PARALLEL,
-	SERIAL
 };
 
 

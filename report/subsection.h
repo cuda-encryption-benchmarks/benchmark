@@ -6,6 +6,7 @@
 #include "benchmark_data.h"
 #include "../typedef.h"
 #include "../ccc/ccc.h"
+#include "../mode.h"
 
 
 // The number of iterations to run for each subsection.
