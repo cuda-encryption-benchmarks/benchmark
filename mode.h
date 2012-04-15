@@ -2,6 +2,11 @@
 #define mode_H
 
 
+// Buffer size for getting the mode name.
+// NOTE: May not be implemented in all calls currently.
+#define MODE_NAME_LENGTH 15
+
+
 #include "ccc/ccc.h"
 
 
@@ -16,7 +21,7 @@ enum mode {
 
 /**	Get the function name of the specified mode.
  *	@out	name: The human-readable representation of the specified mode.
- *		Buffer length should be at least 50.
+ *		Buffer length should be defined using the macro.
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* mode_get_name(enum mode mode, char* name);

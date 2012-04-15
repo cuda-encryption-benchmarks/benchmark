@@ -16,8 +16,8 @@
 #include <unistd.h>
 
 #include "section.h"
-#include "../ccc/ccc.h"
-#include "../typedef.h"
+#include "ccc/ccc.h"
+#include "typedef.h"
 
 
 // The maximum length of the report basepath string.
@@ -40,15 +40,23 @@ typedef struct {
 	FILE* file;
 	// The base path for the report's documents.
 	char basepath[REPORT_BASEPATH_LENGTH_MAX];
+	// The filepath for the input file.
+	char* input_filepath;
 	// The name of the report without a file extension.
 	char filename[REPORT_FILENAME_LENGTH_MAX];
 } report_t;
 
 
+/**	Execute the specified report. This will gather all necessary data and may take some time.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_execute(report_t* report);
+
+
 /**	Initializes the members of the specified report_t.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* report_init(report_t* report);
+exception_t* report_init(report_t* report, char* input_filepath, int data_count);
 
 
 /**	Private function of report_init() that creates the appropriate directory structure for the specified report and initializes

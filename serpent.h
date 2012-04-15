@@ -31,21 +31,22 @@
 
 
 /**	Run the specified array of 128-bit blocks through the Serpent encryption algorithm.
+ *	@out	buffer_size: Size of the global memory buffer used (only for CUDA).
  *	@return NULL on success, exception_t* on failure.
  */
-exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption);
+exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption, size_t* buffer_size);
 
 
 /**	Decrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
+exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
 /**	Encrypt the specified array of 128-bit blocks through the CUDA Serpent algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
+exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
 /**	Private inner function to prevent linking errors because nvcc does not like external libraries.
@@ -54,7 +55,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 #ifdef __cplusplus
 extern "C"
 #endif
-int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count);
+int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
 /**	Private inner function to prevent linking errors because nvcc does not like external libraries.
@@ -63,7 +64,7 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 #ifdef __cplusplus
 extern "C"
 #endif
-int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count);
+int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
 /**	Decrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.

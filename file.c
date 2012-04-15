@@ -190,7 +190,7 @@ exception_t* file_get_block_count(file_t* file, long long* block_count) {
 }
 
 
-exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks, int* blocks_read) {
+exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks) {
 	const int BUFFER_SIZE_MAX = sizeof(block128_t) * 512;
 	char* function_name = "file_read()";
 	// Temporary storage for blocks to prevent multiple dereferences.
@@ -213,9 +213,6 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128_
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
-	}
-	if ( blocks_read == NULL ) {
-		return exception_throw("blocks_read was NULL.", function_name);
 	}
 
 	// Allocate space for block_count block128_ts.
@@ -280,14 +277,13 @@ exception_t* file_read(file_t* file, int block_index, int block_count, block128_
 
 	// Set output parameters.
 	(*blocks) = blocks_local;
-	(*blocks_read) = blocks_read_total;
 
 	// Return success.
 	return NULL;
 }
 
 
-exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks, int* blocks_written) {
+exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks) {
 	const int BUFFER_SIZE_MAX = sizeof(block128_t) * 512;
 	char* function_name = "file_write()";
 	uint32_t* buffer;
@@ -308,9 +304,6 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
-	}
-	if ( blocks_written == NULL ) {
-		return exception_throw("blocks_written was NULL.", function_name);
 	}
 
 	// Seek to block_index.
@@ -374,9 +367,6 @@ exception_t* file_write(file_t* file, int block_index, int block_count, block128
 
 	// Free the written blocks.
 	free(blocks);
-
-	// Set output parameters.
-	(*blocks_written) = blocks_written_total;
 
 	// Return success.
 	return NULL;

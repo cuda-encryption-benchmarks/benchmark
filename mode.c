@@ -12,7 +12,7 @@ exception_t* mode_get_name(enum mode mode, char* name) {
 	// Get the mode name.
 	switch(mode) {
 	case CUDA:
-		strcpy(name, "Compute Unified Device Architecture (CUDA)");
+		strcpy(name, "CUDA");
 		break;
 	case PARALLEL:
 		strcpy(name, "Parallel");

@@ -68,10 +68,9 @@ exception_t* file_get_block_count(file_t* file, long long* block_count);
  *	@param	block_index: The index of the first block to read in.
  *	@param	block_count: The number of 128-bit blocks to read in.
  *	@out	blocks: Pointer to the array of blocks read in.
- *	@out	blocks_read: The number of blocks read in.
  *	@return	NULL on success; exception_t* on failure.
  */
-exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks, int* blocks_read);
+exception_t* file_read(file_t* file, int block_index, int block_count, block128_t** blocks);
 
 
 /**	Private function which reads in file metadata.
@@ -84,10 +83,9 @@ exception_t* file_read_metadata(file_t* file);
  *	@param	block_index: The index of the first block to write to.
  *	@param	block_count: The number of blocks to write.
  *	@param	blocks: Pointer to the array of blocks to write.
- *	@out	blocks_written: The number of blocks written.
  *	@return	NULL on success; exception_t* on failure.
  */
-exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks, int* blocks_written);
+exception_t* file_write(file_t* file, int block_index, int block_count, block128_t* blocks);
 
 
 /**	Private function which writes file metadata.

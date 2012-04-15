@@ -1,18 +1,62 @@
 #include "report.h"
 
 
-exception_t* report_init(report_t* report) {
-	char* function_name = "report_init()";
-	char filepath[REPORT_BASEPATH_LENGTH_MAX + REPORT_FILENAME_LENGTH_MAX + 3];
+exception_t* report_execute(report_t* report) {
+	char* function_name = "report_execute()";
 	exception_t* exception;
+	int i;
 
 	// Validate parameters.
 	if ( report == NULL ) {
 		return exception_throw("report was NULL.", function_name);
 	}
 
-	// Set the report name.
+	// Execute each subsection.
+	fprintf(stdout, "Report execution starting.\n");
+	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
+		exception = section_execute(&(report->sections[i]), report->input_filepath);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+	// Return success.
+	fprintf(stdout, "Report execution completed successfully!\n");
+	return NULL;
+}
+
+
+exception_t* report_init(report_t* report, char* input_filepath, int data_count) {
+	char* function_name = "report_init()";
+	exception_t* exception;
+	char filepath[REPORT_BASEPATH_LENGTH_MAX + REPORT_FILENAME_LENGTH_MAX + 3];
+	int length;
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+	if ( input_filepath == NULL ) {
+		return exception_throw("input_filepath was NULL.", function_name);
+	}
+	if ( data_count < 1 ) {
+		return exception_throw("data_count must be > 0", function_name);
+	}
+	fprintf(stdout, "Initializing the report. ");
+
+	// Set the report filename.
 	strcpy(report->filename, "report");
+
+	// Copy and set the input filename.
+	length = strlen(input_filepath);
+	if ( length == 0 ) {
+		return exception_throw("Empty input filepath.", function_name);
+	}
+	report->input_filepath = (char*)malloc(sizeof(char) * (length + 1)); // +1 for the null character.
+	if ( report->input_filepath == NULL ) {
+		return exception_throw("Unable to malloc input filepath.", function_name);
+	}
+	strcpy(report->input_filepath, input_filepath);
 
 	// Create the directory structure.
 	report->basepath[0] = '\0';
@@ -22,6 +66,7 @@ exception_t* report_init(report_t* report) {
 	}
 
 	// Open the report file.
+	filepath[0] = '\0';
 	strcat(filepath, report->basepath);
 	strcat(filepath, report->filename);
 	strcat(filepath, ".tex");
@@ -32,12 +77,13 @@ exception_t* report_init(report_t* report) {
 
 	// Initialize each section of the report.
 	// Serpent section.
-	exception = section_init(&(report->sections[REPORT_SECTION_SERPENT]), SERPENT);
+	exception = section_init(&(report->sections[REPORT_SECTION_SERPENT]), data_count, SERPENT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 
 	// Return success.
+	fprintf(stdout, "\n");
 	return NULL;
 }
 
@@ -55,11 +101,11 @@ exception_t* report_init_create_directories(report_t* report) {
 	}
 
 	// Make/ensure creation of results directory.
-	strcpy(report->basepath, "results");
+	strcpy(report->basepath, "runs");
 	if ( stat(report->basepath, &stats) == 0 ) { // File exists.
 		// Check if the file is a directory.
 		if ( !(S_ISDIR(stats.st_mode)) ) {
-			return exception_throw("The results file exists and is not a directory.", function_name);
+			return exception_throw("The runs file exists and is not a directory.", function_name);
 		}
 	}
 	else { // Stat failed.
@@ -117,12 +163,17 @@ exception_t* report_free(report_t* report) {
 	if ( report == NULL ) {
 		return exception_throw("report was NULL.", function_name);
 	}
+	fprintf(stdout, "Wrapping up the report. ");
 
 	// Invalidate the basepath.
 	report->basepath[0] = '\0';
 
 	// Invalidate the filename.
 	report->filename[0] = '\0';
+
+	// Free the input filepath.
+	free(report->input_filepath);
+	report->input_filepath = NULL;
 
 	// Free each section of the report.
 	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
@@ -138,6 +189,7 @@ exception_t* report_free(report_t* report) {
 	}	
 
 	// Return success.
+	fprintf(stdout, "\n");
 	return NULL;
 }
 
@@ -145,29 +197,55 @@ exception_t* report_free(report_t* report) {
 exception_t* report_write(report_t* report) { 
 	char* function_name = "report_write()";
 	exception_t* exception;
+	struct timespec timespec;
 	int i;
 
 	// Validate parameters.
 	if ( report == NULL ) {
 		return exception_throw("report was NULL.", function_name);
 	}
+	fprintf(stdout, "Report writing starting.\n");
 
 	// Move into the report directory.
+	fprintf(stdout, "Moving into report directory. ");
 	if ( chdir(report->basepath) == -1 ) {
+		fprintf(stdout, "ERROR: ");
+		fflush(stdout);
 		perror(NULL);
 		return exception_throw("Unable to chdir into report directory.", function_name);
 	}
+	fprintf(stdout, "\n");
 
 	// Write document head.
 	fprintf(report->file, "\\documentclass{article}\n\n");
 	fprintf(report->file, "\\usepackage{amsmath}\n\n");
+	fprintf(report->file, "\\usepackage{float}\n\n");
 	fprintf(report->file, "\\title{CUDA Benchmarking Report}\n\\author{Automatically Generated}\n\n");
 	fprintf(report->file, "\\begin{document}\n\n");
 	fprintf(report->file, "\\maketitle\n\n");
 
-	// Write introduction section. TODOO
+	// Write introduction section. TODO
 	fprintf(report->file, "\\section{Introduction}\n");
 	fprintf(report->file, "This is an automatically-generated report for the CUDA benchmarking suite.\n\n");
+
+	// Write methodologies. TODO: Clean up.
+	fprintf(report->file, "\\section{Methodologies}\n");
+	// Get clock resolution. clock_getres().
+        fprintf(report->file, "\\subsection{Timing}\n \
+		Benchmarking times are measured using the \\verb-clock_getres()- function. \
+		Note that the accuracy of this method may be system-dependent. \
+		The resolution of this clock is:\n \\begin{verbatim}\n");
+        if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
+                fprintf(report->file, "Unknown");
+		fprintf(stdout, "ERROR getting clock resolution: ");
+                fflush(stdout);
+                perror(NULL);
+        }
+        else {
+                fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
+        }
+	fprintf(report->file,"\n\\end{verbatim}\n\n");
+
 
 	// Write subsections.
 	fprintf(report->file, "\\section{Results}\n");
@@ -178,36 +256,49 @@ exception_t* report_write(report_t* report) {
 		}
 	}
 
-	// Write conclusion section. TODOO
+	// Write conclusion section. TODO
 	fprintf(report->file, "\n\\section{Conclusions}\n");
 
 	// Write system information.
+	fprintf(stdout, "Writing system information. ");
+	fflush(stdout);
 	exception = report_write_system_information(report);
 	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
+		fprintf(stdout, "ERROR: %s", exception->message);
 	}
+	fprintf(stdout, "\n");
 	
 	// Write document tail.
 	fprintf(report->file, "\\end{document}\n");
 
 	// Flush the file buffer.
+	fprintf(stdout, "Flushing LaTeX buffer. ");
 	if ( fflush(report->file) == EOF ) {
-		return exception_throw("Unable to flush before write.", function_name);
+		fprintf(stdout, "ERROR.");
 	}
+	fprintf(stdout, "\n");
 
 	// Compile the report into LaTeX.
+	fprintf(stdout, "Compiling into LaTeX. ");
+	fflush(stdout);
 	exception = report_write_compile_latex(report);
 	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
+		fprintf(stdout, "ERROR: %s", exception->message);
 	}
+	fprintf(stdout, "\n");
 
 	// Move back into the original directory.
+	fprintf(stdout, "Moving back into original directory. ");
 	if ( chdir("../../") == -1 ) {
+		fprintf(stdout, "ERROR: ");
+		fflush(stdout);
 		perror(NULL);
 		return exception_throw("Unable to chdir into original directory.", function_name);
 	}
+	fprintf(stdout, "\n");
 
 	// Return success.
+	fprintf(stdout, "Report writing completed.\n");
 	return NULL;
 }
 
@@ -220,6 +311,7 @@ exception_t* report_write_compile_latex(report_t* report) {
 	int child_id;
 	int child_status;
 	int exit_status;
+	int fd;
 	int i;
 
 	// Build the full filename.
@@ -236,6 +328,29 @@ exception_t* report_write_compile_latex(report_t* report) {
 
 		// Exec into latex.
 		if ( child_id == 0 ) {
+			// Open a gateway to the void in-between terminals.
+			fd = open("/dev/null", O_WRONLY);
+			if ( fd == -1 ) {
+				perror("Failed to open /dev/null; incoming nastiness...");
+			}
+			else {
+				// Close stdout and stderr.
+				if ( close(STDOUT_FILENO) == -1 ) {
+					perror("Unable to close LaTeX stdout.");
+				}
+				if ( close(STDERR_FILENO) == -1 ) {
+					perror("Unable to close LaTeX stderr.");
+				}
+
+				// Banish stdout and stderr from this virtual world.
+				if ( dup2(fd, STDOUT_FILENO) == -1 ) {
+					perror("Unable to dup2 stdout.");
+				}
+				if ( dup2(fd, STDERR_FILENO) == -1 ) {
+					perror("Unable to dup2 stderr.");
+				}
+			}
+
 			// Execute latex.
 			execlp("latex", "latex", "-interaction=nonstopmode", filename_tex, (char*)'\0');
 			return exception_throw("Unable to exec into latex.", function_name);
@@ -272,6 +387,29 @@ exception_t* report_write_compile_latex(report_t* report) {
 		return exception_throw("Unable to fork dvips child.", function_name);
 	}
 	if ( child_id == 0 ) {
+		// Open a gateway to the void in-between terminals.
+		fd = open("/dev/null", O_WRONLY);
+		if ( fd == -1 ) {
+			perror("Failed to open /dev/null; incoming nastiness...");
+		}
+		else {
+			// Close stdout and stderr.
+			if ( close(STDOUT_FILENO) == -1 ) {
+				perror("Unable to close LaTeX stdout.");
+			}
+			if ( close(STDERR_FILENO) == -1 ) {
+				perror("Unable to close LaTeX stderr.");
+			}
+
+			// Banish stdout and stderr from this virtual world.
+			if ( dup2(fd, STDOUT_FILENO) == -1 ) {
+				perror("Unable to dup2 stdout.");
+			}
+			if ( dup2(fd, STDERR_FILENO) == -1 ) {
+				perror("Unable to dup2 stderr.");
+			}
+		}
+
 		// Execute dvips.
 		execlp("dvips", "dvips", "-R", "-Poutline", "-t", "letter", filename_dvi, "-o", filename_ps, (char*)'\0');
 		return exception_throw("Unable to exec into dvips.", function_name);
@@ -299,6 +437,29 @@ exception_t* report_write_compile_latex(report_t* report) {
 		return exception_throw("Unable to fork ps2pdf child.", function_name);
 	}
 	if ( child_id == 0 ) {
+		// Open a gateway to the void in-between terminals.
+		fd = open("/dev/null", O_WRONLY);
+		if ( fd == -1 ) {
+			perror("Failed to open /dev/null; incoming nastiness...");
+		}
+		else {
+			// Close stdout and stderr.
+			if ( close(STDOUT_FILENO) == -1 ) {
+				perror("Unable to close LaTeX stdout.");
+			}
+			if ( close(STDERR_FILENO) == -1 ) {
+				perror("Unable to close LaTeX stderr.");
+			}
+
+			// Banish stdout and stderr from this virtual world.
+			if ( dup2(fd, STDOUT_FILENO) == -1 ) {
+				perror("Unable to dup2 stdout.");
+			}
+			if ( dup2(fd, STDERR_FILENO) == -1 ) {
+				perror("Unable to dup2 stderr.");
+			}
+		}	
+
 		// Execute ps2pdf.
 		execlp("ps2pdf", "ps2pdf", filename_ps, (char*)'\0');
 		return exception_throw("Unable to exec into ps2pdf.", function_name);
@@ -341,7 +502,7 @@ exception_t* report_write_system_information(report_t* report) {
 		the entire program as root, if possible.\n\n");
 
 	// Open a file for system hardware information.
-	fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0700);
+	fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0600);
 	if ( fd == -1 ) {
 		perror(NULL);
 		return exception_throw("Unable to open file for hardware data.", function_name);

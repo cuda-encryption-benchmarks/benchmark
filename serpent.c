@@ -420,7 +420,7 @@
 	d ^= subkey[4 * r + 3];}
 
 
-exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption) {
+exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption, size_t* buffer_size) {
 	char* function_name = "serpent()";
 	exception_t* exception;
 
@@ -431,16 +431,19 @@ exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, en
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	if ( buffer_size == NULL ) {
+		return exception_throw("buffer_size was NULL.", function_name);
+	}
 
 	// Run the appropirate algorithm.
 	switch(mode) {
 	case CUDA:
 		switch(encryption) {
 		case DECRYPT:
-			exception = serpent_cuda_decrypt(user_key, blocks, block_count);
+			exception = serpent_cuda_decrypt(user_key, blocks, block_count, buffer_size);
 			break;
 		case ENCRYPT:
-			exception = serpent_cuda_encrypt(user_key, blocks, block_count);
+			exception = serpent_cuda_encrypt(user_key, blocks, block_count, buffer_size);
 			break;
 		default:
 			return exception_throw("Unrecognized encryption parameter for CUDA.", function_name);
@@ -482,7 +485,7 @@ exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, en
 }
 
 
-exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count) {
+exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size) {
 	char* function_name = "serpent_cuda_decrypt()";
 	exception_t* exception;
 	uint32_t* subkey;
@@ -494,6 +497,9 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int bl
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	if ( buffer_size == NULL ) {
+		return exception_throw("buffer_size was NULL.", function_name);
+	}
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -502,7 +508,7 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int bl
 	}
 
 	// Run the encryption algorithm from a different file.
-	if ( serpent_cuda_decrypt_cu(subkey, blocks, block_count) == -1 ) {
+	if ( serpent_cuda_decrypt_cu(subkey, blocks, block_count, buffer_size) == -1 ) {
 		return exception_throw("CUDA encryption FAILED.", function_name);
 	}
 
@@ -517,7 +523,7 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int bl
 }
 
 
-exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count) {
+exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size) {
 	char* function_name = "serpent_cuda_encrypt()";
 	exception_t* exception;
 	uint32_t* subkey;
@@ -529,6 +535,9 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	if ( buffer_size == NULL ) {
+		return exception_throw("buffer_size was NULL.", function_name);
+	}
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -537,7 +546,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 	}
 
 	// Run the encryption algorithm from a different file.
-	if ( serpent_cuda_encrypt_cu(subkey, blocks, block_count) == -1 ) {
+	if ( serpent_cuda_encrypt_cu(subkey, blocks, block_count, buffer_size) == -1 ) {
 		return exception_throw("CUDA encryption FAILED.", function_name);
 	}
 

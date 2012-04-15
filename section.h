@@ -4,15 +4,16 @@
 
 
 #include "subsection.h"
-#include "../algorithm.h"
-#include "../ccc/ccc.h"
-#include "../typedef.h"
+#include "algorithm.h"
+#include "ccc/ccc.h"
+#include "key.h"
+#include "typedef.h"
 
 
 // The number of subsections in the section class.
 // Note the naming convention. The prefix "SECTION" designates
 // the structure that the #define is in, while the suffix
-// "SUBSECTION_COUNT" denotes the name of the property.
+// "SUBSECTION_*" denotes the name of the property.
 // It's really quite logical once your head stops hurting.
 #define SECTION_SUBSECTION_COUNT 3
 // The section for CUDA data.
@@ -31,16 +32,24 @@
 typedef struct {
 	// The algorithm run by the specified section.
 	enum algorithm algorithm;
+	// The key to use for the specified algorithm.
+	key256_t key;
 	// The subsections of the report, altogether containing the different modes
 	// the algorithm is run in.
 	subsection_t subsections[SECTION_SUBSECTION_COUNT];
 } section_t;
 
 
+/**	Executes the data-gathering phase for the specified section.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* section_execute(section_t* section, char* input_filepath);
+
+
 /**	Iniitialize the specified section_t with the specified algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* section_init(section_t* section, enum algorithm algorithm);
+exception_t* section_init(section_t* section, int data_count, enum algorithm algorithm);
 
 
 /**	Uninitialize the specified section_t.

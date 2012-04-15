@@ -7,14 +7,16 @@ libraries = -lccc -lcuda -lcudart -lgomp
 cfiles =	main \
 		aes \
 		algorithm \
+		benchmark \
 		block128 \
+		encryption \
 		file \
 		key \
 		mirror_bytes \
 		mode \
-		report/report \
-		report/section \
-		report/subsection \
+		report \
+		section \
+		subsection \
 		serpent
 cufiles = 	cuda_extension \
 		serpent_cu # Linker does not like files with the same name.
@@ -22,12 +24,12 @@ cufiles = 	cuda_extension \
 
 # Version information.
 major_number = 0
-minor_number = 0
+minor_number = 1
 release_number = 1
 version = ${major_number}.${minor_number}.${release_number}
 
-# Benchmark name.
-name = benchmark
+# Output name.
+name = report
 
 # Perform default functionality.
 default: compile create clean done

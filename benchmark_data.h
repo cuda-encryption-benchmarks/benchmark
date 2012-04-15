@@ -18,7 +18,7 @@ typedef struct {
 	// The total time taken for the run.
 	struct timespec time_elapsed;
 	// The amount of global memory used for the block buffer.
-	long long buffer_size;
+	size_t buffer_size;
 } benchmark_data_t;
 
 
