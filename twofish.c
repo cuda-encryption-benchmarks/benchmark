@@ -4,12 +4,12 @@
 
 union block128_u {
     block128_t data;
-    uint32_t arr[4];
+    char arr[16];
 };
 
 union key256_u {
     key256_t key;
-    uint32_t arr[8];
+    uint32_t arr[32];
 };
 
 
