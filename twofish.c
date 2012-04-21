@@ -9,7 +9,7 @@ union block128_u {
 
 union key256_u {
     key256_t key;
-    uint32_t arr[32];
+    char arr[32];
 };
 
 
