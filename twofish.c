@@ -1,15 +1,37 @@
 
 #include "twofish.h"
 
+#define extract_byte(x,n)   ((u1byte)((x) >> (8 * n)))
+
+#define rotr(x,n) (((x)>>(n))|((x)<<(32-(n))))
+#define rotl(x,n) (((x)<<(n))|((x)>>(32-(n))))
 
 
+#define g0_fun(x)   h_fun(instance, x, instance->s_key)
+#define g1_fun(x)   h_fun(instance, rotl(x,8), instance->s_key)
 
+
+#define f_rnd(i)                                                    \
+    t1 = g1_fun(blk[1]); t0 = g0_fun(blk[0]);                       \
+    blk[2] = rotr(blk[2] ^ (t0 + t1 + l_key[4 * (i) + 8]), 1);      \
+    blk[3] = rotl(blk[3], 1) ^ (t0 + 2 * t1 + l_key[4 * (i) + 9]);  \
+    t1 = g1_fun(blk[3]); t0 = g0_fun(blk[2]);                       \
+    blk[0] = rotr(blk[0] ^ (t0 + t1 + l_key[4 * (i) + 10]), 1);     \
+    blk[1] = rotl(blk[1], 1) ^ (t0 + 2 * t1 + l_key[4 * (i) + 11])
 
 exception_t* twofish_encrypt_block(block128_u* block, key256_u* fullkey){
 
 
 
 }
+
+#define i_rnd(i)                                                        \
+        t1 = g1_fun(blk[1]); t0 = g0_fun(blk[0]);                       \
+        blk[2] = rotl(blk[2], 1) ^ (t0 + t1 + l_key[4 * (i) + 10]);     \
+        blk[3] = rotr(blk[3] ^ (t0 + 2 * t1 + l_key[4 * (i) + 11]), 1); \
+        t1 = g1_fun(blk[3]); t0 = g0_fun(blk[2]);                       \
+        blk[0] = rotl(blk[0], 1) ^ (t0 + t1 + l_key[4 * (i) +  8]);     \
+        blk[1] = rotr(blk[1] ^ (t0 + 2 * t1 + l_key[4 * (i) +  9]), 1)
 
 exception_t* twofish_decrypt_block(block128_t* block, key256_u* fullkey){
 
