@@ -1,4 +1,10 @@
 /*
+
+ The algorithm implementation was made by Brian Gladman (see below), and then  
+ adapted for TrueCrypt, and then adapted for CUDA benchmarking on March 2012.
+
+ A copy of all licenses is contained in the LICENSE file.
+
  ---------------------------------------------------------------------------
  Copyright (c) 1998-2007, Brian Gladman, Worcester, UK. All rights reserved.
 
@@ -25,7 +31,6 @@
  Issue Date: 20/12/2007
 */
 
-/* Adapted for CUDA benchmarking March 2012. */
 
 
 #ifndef aes_H
