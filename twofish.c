@@ -2,24 +2,16 @@
 #include "twofish.h"
 
 
-union block128_u {
-    block128_t data;
-    uint32_t arr[16];
-};
-
-union key256_u {
-    key256_t key;
-    char arr[32];
-};
 
 
-exception_t* twofish_encrypt_block(block128_u* block, uint32_t* subkey){
+
+exception_t* twofish_encrypt_block(block128_u* block, key256_u* fullkey){
 
 
 
 }
 
-exception_t* twofish_decrypt_block(block128_t* block, uint32_t* subkey){
+exception_t* twofish_decrypt_block(block128_t* block, key256_u* fullkey){
 
 }
 
@@ -145,15 +137,10 @@ exception_t* twofish_serial_encrypt(key256_t* user_key, block128_t* blocks, int 
 		return exception_throw("blocks was NULL.", function_name);
 	}
 
-	// Initialize the subkey.
-	exception = twofish_init_subkey(user_key, &subkey);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
     
     // Add the key struct to the union so that twofish can do indexing tricks
    key256_u key;
-   key.key = *subkey;
+   key.key = *user_key;
     
     
 	// Encrypt each block.

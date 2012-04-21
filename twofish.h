@@ -21,6 +21,17 @@
 #include "typedef.h"
 
 
+//Unions so that Twofish can index the key with []
+union block128_u {
+    block128_t data;
+    uint32_t arr[16];
+};
+
+union key256_u {
+    key256_t key;
+    char arr[32];
+};
+
 // Rotate the bits in the specified number x left by the specified number n.
 #define rotl_fixed(x, n)   (((x) << (n)) | ((x) >> (32 - (n))))
 // Rotate the bits in the specified number x right by the specified number n.
