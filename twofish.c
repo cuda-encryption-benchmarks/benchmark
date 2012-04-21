@@ -3,23 +3,23 @@
 
 
 union block128_u {
-    block128_t key;
+    block128_t data;
     uint32_t arr[4];
-}
+};
 
 union key256_u {
     key256_t key;
     uint32_t arr[8];
+};
+
+
+exception_t* twofish_encrypt_block(block128_u* block, uint32_u* subkey){
+
+
+
 }
 
-
-exception_t* twofish_encrypt(block128_u* block, uint32_u* subkey){
-
-
-
-}
-
-exception_t* twofish_decrypt(block128_t* block, uint32_t* subkey){
+exception_t* twofish_decrypt_block(block128_t* block, uint32_t* subkey){
 
 }
 
@@ -150,10 +150,19 @@ exception_t* twofish_serial_encrypt(key256_t* user_key, block128_t* blocks, int 
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
-
+    
+    // Add the key struct to the union so that twofish can do indexing tricks
+   key256_u key;
+   key.key = *subkey;
+    
+    
 	// Encrypt each block.
 	for ( int i = 0; i < block_count; i++ ) {
-		exception = twofish_encrypt_block(&(blocks[i]), subkey);
+        //Add the block to the union so that we can index it with array stuff
+        block128_u block;
+        block.data = blocks[i];
+    
+		exception = twofish_encrypt_block(&block, &key);
 		if ( exception != NULL ) {
 			return exception_throw("blocks was NULL.", function_name);
 		}
@@ -268,3 +277,53 @@ exception_t* twofish_free_subkey(uint32_t* subkey) {
 	// Return success.
 	return NULL;
 }
+
+
+exception_t* twofish_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size) {
+    return NULL;
+}
+
+
+/**	Encrypt the specified array of 128-bit blocks through the CUDA twofish algorithm.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* twofish_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size){
+    return NULL;
+}
+
+
+/**	Private inner function to prevent linking errors because nvcc does not like external libraries.
+ *	@return 0 on success, -1 on failure.
+ */
+int twofish_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size){
+    return NULL;
+
+}
+
+
+
+int twofish_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size){
+    return NULL;
+
+}
+
+
+/**	Decrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
+ *	@return NULL on success, exception_t* on failure.
+ */
+exception_t* twofish_parallel_decrypt(key256_t* user_key, block128_t* blocks, int block_count){
+    return NULL;
+}
+
+
+
+
+
+
+/**	Encrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
+ *	@return NULL on success, exception_t* on failure.
+ */
+exception_t* twofish_parallel_encrypt(key256_t* user_key, block128_t* blocks, int block_count){
+    return NULL;
+}
+
