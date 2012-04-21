@@ -259,7 +259,7 @@ exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, e
 	}
 
 	// Write CSV headers.
-	fprintf(csv_file, "Iteration #, Seconds, Nanoseconds");
+	fprintf(csv_file, "Iteration #, Elapsed Time");
 	if ( mode == CUDA ) {
 		fprintf(csv_file, ", Global Memory Used");
 	}
@@ -267,7 +267,7 @@ exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, e
 
 	// Write data.
 	for ( i = 0; i < data_count; i++ ) {
-		fprintf(csv_file, "%i,%li,%li", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
+		fprintf(csv_file, "%i,%li.%09li", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
 		if ( mode == CUDA ) {
 			fprintf(csv_file, ",%" PRIuPTR, data[i].buffer_size);
 		}
@@ -364,23 +364,29 @@ exception_t* subsection_write_latex_table(FILE* file, benchmark_data_t* data, in
 		\\caption{%s %s %s data}\n\\centering\n", algorithm_name, mode_name, encryption_name);
 
 	// Print tabular head.
-	fprintf(file, "\\begin{tabular}[c]{r|r|r");
+	fprintf(file, "\\begin{tabular}[c]{r|c@{.}l");
 	if ( mode == CUDA ) { // CUDA has one more entry.
 		fprintf(file, "|r");
 	}
 	fprintf(file, "}\n");
 
 	// Print row headers.
-	fprintf(file, "Iteration \\# & Elapsed Seconds & Elapsed Nanoseconds ");
+	fprintf(file, "Iteration \\# & \\multicolumn{2}{c");
 	if ( mode == CUDA ) {
-		fprintf(file, "& Global Memory Used ");
+		// For some reason the last column's left | gets
+		// overriden when using multicolumn :(
+		fprintf(file, "|");
+	}
+	fprintf(file, "}{Time Elapsed (s)} ");
+	if ( mode == CUDA ) {
+		fprintf(file, "& Global Memory Used (MB)");
 	}
 	fprintf(file, "\\\\\n\\hline\n");
 
 	// Print the data.
 	for ( i = 0; i < data_count; i++ ) {
-		fprintf(file, "%i & %li & %li ", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
-		if ( mode == CUDA ) {
+		fprintf(file, "%i & %li & %09li ", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
+		if ( mode == CUDA ) { // Global memory used.
 			fprintf(file, "& %" PRIuPTR, data[i].buffer_size);
 		}
 		fprintf(file, "\\\\\n");

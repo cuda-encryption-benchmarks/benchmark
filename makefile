@@ -29,7 +29,7 @@ release_number = 1
 version = ${major_number}.${minor_number}.${release_number}
 
 # Output name.
-name = report
+name = benchmark
 
 # Perform default functionality.
 default: compile create clean done
