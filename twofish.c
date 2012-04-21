@@ -4,7 +4,7 @@
 
 union block128_u {
     block128_t data;
-    char arr[16];
+    uint32_t arr[16];
 };
 
 union key256_u {
@@ -13,7 +13,7 @@ union key256_u {
 };
 
 
-exception_t* twofish_encrypt_block(block128_u* block, uint32_u* subkey){
+exception_t* twofish_encrypt_block(block128_u* block, uint32_t* subkey){
 
 
 
