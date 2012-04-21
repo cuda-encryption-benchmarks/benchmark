@@ -18,6 +18,7 @@
 #include "ccc/ccc.h"
 #include "mode.h"
 #include "key.h"
+#include "statistics.h"
 
 
 typedef struct {
@@ -74,10 +75,22 @@ exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, e
 exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum algorithm algorithm);
 
 
-/**	Private function of subsection_write_latex() for writing data tables.
+/**	Private function of subsection_write_latex() that writes part of the subsection data in LaTeX.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_latex_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+exception_t* subsection_write_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+
+
+/**	Private function of subsection_write_latex_data() that writes statistical information in LaTeX.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count);
+
+
+/**	Private function of subsection_write_latex_data() for writing data tables in LaTeX.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
 
 
 #endif // subsection_H

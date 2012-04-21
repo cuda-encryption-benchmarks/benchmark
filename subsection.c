@@ -308,14 +308,14 @@ exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum a
 
 	// Write encryption data.
 	fprintf(stdout, "Encryption. ");
-	exception = subsection_write_latex_table(file, subsection->data_encrypt, subsection->data_count, algorithm, subsection->mode, ENCRYPT);
+	exception = subsection_write_latex_data(file, subsection->data_encrypt, subsection->data_count, algorithm, subsection->mode, ENCRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 
 	// Write decryption data.
 	fprintf(stdout, "Decryption. ");
-	exception = subsection_write_latex_table(file, subsection->data_decrypt, subsection->data_count, algorithm, subsection->mode, DECRYPT);
+	exception = subsection_write_latex_data(file, subsection->data_decrypt, subsection->data_count, algorithm, subsection->mode, DECRYPT);
 	if (exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -325,8 +325,106 @@ exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum a
 }
 
 
-exception_t* subsection_write_latex_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
-	char* function_name = "subsection_write_latex_table()";
+exception_t* subsection_write_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
+	char* function_name = "subsection_write_latex_data()";
+	exception_t* exception;
+
+	// Validate parameters.
+	if ( file == NULL ) {
+		return exception_throw("file was NULL", function_name);
+	}
+	if ( data == NULL ) {
+		return exception_throw("data was NULL", function_name);
+	}
+
+	// Write the data table.
+	exception = subsection_write_latex_data_table(file, data, data_count, algorithm, mode, encryption);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	
+	// Write statistical data.
+	exception = subsection_write_latex_data_statistics(file, data, data_count);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count) {
+	char* function_name = "subsection_write_latex_data_statistics()";
+	exception_t* exception;
+	const long NANOSECONDS_PER_SECOND = 1000000000;
+	double* times_elapsed;
+	double mean;
+	double standard_deviation;
+	double temp;
+	int i;
+
+	// Validate parameters.
+	if ( file == NULL ) {
+		return exception_throw("file was NULL", function_name);
+	}
+	else if ( data == NULL ) {
+		return exception_throw("data was NULL", function_name);
+	}
+
+	// No paragraph indenting!
+	fprintf(file, "\\noindent ");
+
+	// Check if statistical analysis possible.
+	if ( data_count <= 1 ) {
+		fprintf(file, "Statistical analysis not available for a single run.\n");
+		return NULL;
+	}
+
+	// Allocate space for the data as double.
+	times_elapsed = (double*)malloc(sizeof(double) * data_count);
+	if ( times_elapsed == NULL ) {
+		return exception_throw("Unable to allocate double array.", function_name);
+	}
+
+	// Convert each bit of data into a double.
+	for ( i = 0; i < data_count; i++ ) {
+		temp = (double)data[i].time_elapsed.tv_nsec;
+		temp /= NANOSECONDS_PER_SECOND;
+		temp += (double)data[i].time_elapsed.tv_sec;
+		times_elapsed[i] = temp;
+	}
+
+	// Get the mean.
+	exception = statistics_mean_double(times_elapsed, data_count, &mean);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Get the standard deviation.
+	exception = statistics_standard_deviation_double(times_elapsed, data_count, &mean, &standard_deviation);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Free the double array.
+	free(times_elapsed);
+
+	// Print data in LaTeX.
+	fprintf(file, "The sample mean ($\\overline{x}$) and sample standard deviation ($s$) are:\n \
+		\\begin{eqnarray*}\n \
+		\\overline{x} & = & %f \\\\\n \
+		s & = & %f \n \
+		\\end{eqnarray*}\n",
+		mean, standard_deviation);
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
+	char* function_name = "subsection_write_latex_data_table()";
 	exception_t* exception;
 	char algorithm_name[ALGORITHM_NAME_LENGTH];
 	char mode_name[MODE_NAME_LENGTH];

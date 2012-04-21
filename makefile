@@ -16,6 +16,7 @@ cfiles =	main \
 		mode \
 		report \
 		section \
+		statistics \
 		subsection \
 		serpent
 cufiles = 	cuda_extension \

@@ -86,7 +86,13 @@ exception_t* report_write(report_t* report);
 exception_t* report_write_compile_latex(report_t* report);
 
 
-/**	Private function of report_write() that appends system information to the time.
+/**	Private function of report_write() that appends means for obtaining/calculating data to the report.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_methodologies(report_t* report);
+
+
+/**	Private function of report_write() that appends system information to the report.
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write_system_information(report_t* report);

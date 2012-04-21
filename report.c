@@ -197,7 +197,6 @@ exception_t* report_free(report_t* report) {
 exception_t* report_write(report_t* report) { 
 	char* function_name = "report_write()";
 	exception_t* exception;
-	struct timespec timespec;
 	int i;
 
 	// Validate parameters.
@@ -228,24 +227,11 @@ exception_t* report_write(report_t* report) {
 	fprintf(report->file, "\\section{Introduction}\n");
 	fprintf(report->file, "This is an automatically-generated report for the CUDA benchmarking suite.\n\n");
 
-	// Write methodologies. TODO: Clean up.
-	fprintf(report->file, "\\section{Methodologies}\n");
-	// Get clock resolution. clock_getres().
-        fprintf(report->file, "\\subsection{Timing}\n \
-		Benchmarking times are measured using the \\verb-clock_getres()- function. \
-		Note that the accuracy of this method may be system-dependent. \
-		The resolution of this clock is:\n \\begin{verbatim}\n");
-        if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
-                fprintf(report->file, "Unknown");
-		fprintf(stdout, "ERROR getting clock resolution: ");
-                fflush(stdout);
-                perror(NULL);
-        }
-        else {
-                fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
-        }
-	fprintf(report->file,"\n\\end{verbatim}\n\n");
-
+	// Write methodologies.
+	exception = report_write_methodologies(report);
+	if ( exception != NULL ) {
+		fprintf(stdout, "ERROR writing methodologies: %s", exception->message);
+	}
 
 	// Write subsections.
 	fprintf(report->file, "\\section{Results}\n");
@@ -256,15 +242,12 @@ exception_t* report_write(report_t* report) {
 		}
 	}
 
-	// Write conclusion section. TODO
-	fprintf(report->file, "\n\\section{Conclusions}\n");
-
 	// Write system information.
 	fprintf(stdout, "Writing system information. ");
 	fflush(stdout);
 	exception = report_write_system_information(report);
 	if ( exception != NULL ) {
-		fprintf(stdout, "ERROR: %s", exception->message);
+		fprintf(stdout, "ERROR writing system information: %s", exception->message);
 	}
 	fprintf(stdout, "\n");
 	
@@ -486,12 +469,65 @@ exception_t* report_write_compile_latex(report_t* report) {
 }
 
 
+exception_t* report_write_methodologies(report_t* report) {
+	char* function_name = "report_write_methodologies()";
+	struct timespec timespec;
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+
+	// Write section header.
+	fprintf(report->file, "\\section{Methodologies}\n");
+
+	// Get and write clock resolution using clock_getres().
+        fprintf(report->file, "\\subsection{Timing}\n" \
+		"Benchmarking times are measured using the \\verb-clock_getres()- function. " \
+		"Note that the accuracy of this method may be system-dependent. " \
+		"The resolution of this clock is:\n \\begin{verbatim}\n");
+        if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
+                fprintf(report->file, "Unknown");
+		fprintf(stdout, "ERROR getting clock resolution: ");
+                fflush(stdout);
+                perror(NULL);
+        }
+        else {
+                fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
+        }
+	fprintf(report->file,"\n\\end{verbatim}\n\n");
+
+	// Write standard deviation.
+	fprintf(report->file, "\\subsection{Sample Standard Deviation}\n" \
+		"The sample standard deviation is calculated using the adjusted version " \
+		"for sample standard deviation, defined as follows:\n" \
+		"\\begin{eqnarray*}\n" \
+		"s & = & \\sqrt{\\frac{1}{N - 1}\\sum_{i = 1}^{N}(x_i - \\overline{x})^2}\n" \
+		"\\end{eqnarray*}\n" \
+		"where $N$ is the population count, $x_i$ is the ith sample, and $\\overline{x}$ " \
+		"is the population mean.\n\n" \
+		"Internally, these values are calculated by converting the benchmark second and nanosecond " \
+		"integer values into double-precision floating-point values. This results in a minor " \
+		"loss of precision, which should be negligible in all but extreme cases " \
+		"(such as having a value which is orders of magnitude larger than the others, " \
+		" or millions of iterations).\n");
+
+	// Return success.
+	return NULL;
+}
+
+
 exception_t* report_write_system_information(report_t* report) {
 	char* function_name = "report_write_system_information()";
 	char* filename = "hardware.txt";
 	int child_pid;
 	int child_status;
 	int fd;
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
 
 	// Write system information header.
 	fprintf(report->file, "\\section{System Information} \
