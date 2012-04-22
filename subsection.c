@@ -40,7 +40,8 @@ exception_t* subsection_execute(subsection_t* subsection, key256_t* key, char* i
 		exception = benchmark(key, input_filepath, algorithm, subsection->mode, DECRYPT, &(subsection->data_decrypt[i]));
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
-		}
+		} 
+		
 
 		// TODO: Checksum the file.
 

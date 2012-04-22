@@ -26,8 +26,9 @@
 #define rotl_fixed(x, n)   (((x) << (n)) | ((x) >> (32 - (n))))
 // Rotate the bits in the specified number x right by the specified number n.
 #define rotr_fixed(x, n)   (((x) >> (n)) | ((x) << (32 - (n))))
-// Arbitrary amount of memory to subtract from total free memory.
-#define SERPENT_CUDA_MEMORY_BUFFER 600000
+// Percentage of global memory to subtract per iteration when trying to allocate
+// a memory buffer for blocks in CUDA.
+#define SERPENT_CUDA_MEMORY_MULTIPLIER 0.001
 
 
 /**	Run the specified array of 128-bit blocks through the Serpent encryption algorithm.
@@ -65,6 +66,20 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 extern "C"
 #endif
 int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size);
+
+
+/**	Private function that allocates the buffer for blocks on the GPU. 
+ *	@out	cuda_blocks: Pointer to the memory allocated for the blocks on the GPU.
+ *	@out	used_global_memory: Amount of memory used on the GPU.
+ *	@out	blocks_per_kernel: Number of block128_t each kernel can modify.
+ *	@out	blocks_per_thread: Number of block128_t each thread will modify.
+ *	@out	buffer_allocation_attempts: Number of attempts made to allocate memory on the GPU.
+ *	@return	0 on success, -1 on failure.
+ */
+#ifdef __cplusplus
+extern "C"
+#endif
+int serpent_cuda_allocate_buffer(size_t free_global_memory, size_t total_global_memory, int block_count, int multiprocessor_count, int thread_count, block128_t** cuda_blocks, size_t* used_global_memory, int* blocks_per_kernel, int* blocks_per_thread, int* buffer_allocation_attempts);
 
 
 /**	Decrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.

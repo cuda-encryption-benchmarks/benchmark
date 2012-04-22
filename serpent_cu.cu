@@ -664,6 +664,80 @@ __device__ uint32_t mirror_bytes32_cu(uint32_t x) {
 
 
 extern "C"
+inline int serpent_cuda_allocate_buffer(size_t free_global_memory, size_t total_global_memory, int block_count, int multiprocessor_count, int thread_count, block128_t** cuda_blocks, size_t* used_global_memory_output, int* blocks_per_kernel_output, int* blocks_per_thread_output, int* buffer_allocation_attempts_output) {
+	cudaError_t cuda_error;
+	int blocks_per_kernel;
+	int blocks_per_thread;
+	int buffer_allocation_attempts;
+
+	// Validate parameters.
+	#ifdef DEBUG_SERPENT
+	if ( free_global_memory < 1 ) {
+		fprintf(stderr, "Free global memory less than 1.\n");
+		return -1;
+	}
+	else if ( cuda_blocks == NULL ) {
+		fprintf(stderr, "cuda_blocks was NULL.\n");
+		return -1;
+	}
+	else if ( used_global_memory_output == NULL ) {
+		fprintf(stderr, "used_global_memory_output was NULL.\n");
+		return -1;
+	}
+	else if ( blocks_per_kernel_output == NULL ) {
+		fprintf(stderr, "blocks_per_kernel_output was NULL.\n");
+		return -1;
+	}
+	else if ( blocks_per_thread_output == NULL ) {
+		fprintf(stderr, "blocks_per_thread_output was NULL.\n");
+		return -1;
+	}
+	#endif
+
+	// Try to allocate blocks.
+	buffer_allocation_attempts = 1;
+	while ( true ) {
+		// Subtract a small portion of global memory.
+		free_global_memory -= total_global_memory * SERPENT_CUDA_MEMORY_MULTIPLIER;
+		if ( free_global_memory <= 0 ) {
+			fprintf(stderr, "No memory for blocks available.\n");
+			return -1;
+		}
+
+		// Calculate number of blocks per thread.
+		blocks_per_kernel = free_global_memory / sizeof(block128_t);
+		if ( blocks_per_kernel > block_count ) {
+			blocks_per_kernel = block_count;
+		}
+		blocks_per_thread = (blocks_per_kernel / multiprocessor_count) / thread_count;
+
+		// Attempt to allocate memory on the GPU.
+		cuda_error = cudaMalloc( (void**)cuda_blocks, (int)(sizeof(block128_t) * blocks_per_kernel) );
+		if ( cuda_error == cudaSuccess ) { // Success! Exit this loop.
+			break;
+		}
+		else if ( cuda_error != cudaErrorMemoryAllocation ) {
+			fprintf(stderr, "Unable to malloc blocks: %s.\n", cudaGetErrorString(cuda_error));
+			return -1;
+		}
+
+		buffer_allocation_attempts++;
+	}
+
+	// Assign output parameters.
+	(*used_global_memory_output) = free_global_memory;
+	(*blocks_per_kernel_output) = blocks_per_kernel;
+	(*blocks_per_thread_output) = blocks_per_thread;
+	if ( buffer_allocation_attempts_output != NULL ) {
+		(*buffer_allocation_attempts_output) = buffer_allocation_attempts;
+	}
+
+	// Return success.
+	return 0;
+}
+
+
+extern "C"
 int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_count, size_t* buffer_size) {
 	// Total number of registers taken up by a single CUDA thread.
 	const int REGISTERS_PER_THREAD = 8;
@@ -671,9 +745,14 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
+	int blocks_per_kernel;
+	int blocks_per_thread;
+	int buffer_allocation_attempts;
 	int count; 
 	int device_number;
+	int kernel_invocation_attempts;
 	int multiprocessor_count;
+	int temp;
 	int thread_count;
 	int i;
 
@@ -726,71 +805,68 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		fprintf(stderr, "Unable to get memory information: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
-	free_global_memory -= SERPENT_CUDA_MEMORY_BUFFER; // Magic number.
-	/*
-	#if defined(__LP64__) || defined(_LP64)
-	fprintf(stderr, "Total global memory: %li.\n", total_global_memory);
-	#else
-	fprintf(stderr, "Total global memory: %i.\n", total_global_memory);
-	#endif
-	*/
 
-	// Calculate number of blocks per thread.
-	int blocks_per_kernel = free_global_memory / sizeof(block128_t);
-	int blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
-	/*
-	#if defined(__LP64__) || defined(_LP64)
-	fprintf(stderr, "Blocks global memory: %li.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
-	#else
-	fprintf(stderr, "Blocks global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
-	#endif
-	*/
-
-	// Allocate a buffer for the blocks on the GPU.
-	cuda_error = cudaMalloc( (void**)&cuda_blocks, (int)(sizeof(block128_t) * blocks_per_kernel) );
-	if ( cuda_error != cudaSuccess ) { 
-		fprintf(stderr, "Unable to malloc blocks: %s.\n", cudaGetErrorString(cuda_error));
+	// Allocate blocks buffer on the GPU.
+	if ( serpent_cuda_allocate_buffer(free_global_memory, total_global_memory, block_count, multiprocessor_count, thread_count, &cuda_blocks, &free_global_memory, &blocks_per_kernel, &blocks_per_thread, &buffer_allocation_attempts) == -1 ) {
+		fprintf(stderr, "Unable to allocate initial buffer.\n");
 		return -1;
 	}
 
 	// Decrypt the blocks.
 	i = 0;
 	while (i < block_count) {
-		//fprintf(stderr, "Running an iteration. i: %i. block_count: %i.\n", i, block_count);
-
 		// Corner case.
 		if ( i + blocks_per_kernel > block_count ) {
 			blocks_per_kernel = block_count - i;
 			blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
 		}
 
-		// Copy blocks per thread to constant memory.
-		cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		}
+		// Run the algorithm.
+		kernel_invocation_attempts = 1;
+		while( true ) {
+			// Move blocks to global memory.
+			cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128_t) * blocks_per_kernel, cudaMemcpyHostToDevice );
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to memcopy blocks: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
 
-		// Copy blocks per kernel to constant memory.
-		cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		}
+			// Copy blocks per thread to constant memory.
+			cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
 
-		// Move blocks to global memory.
-		cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128_t) * blocks_per_kernel, cudaMemcpyHostToDevice );
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to memcopy blocks: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		}
+			// Copy blocks per kernel to constant memory.
+			cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
 
-		// Run encryption.
-		serpent_cuda_decrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
-		cuda_error = cudaGetLastError();
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to invoke CUDA kernel: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
+			// Run encryption.
+			serpent_cuda_decrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
+			cuda_error = cudaGetLastError();
+			if ( cuda_error == cudaSuccess ) { // Successful run.
+				break;
+			}
+			else if ( cuda_error != cudaErrorMemoryAllocation ) { // Unexpected error.
+				fprintf(stderr, "ERROR invoking the kernel: %s, %i.\n", cudaGetErrorString(cuda_error), cuda_error);
+				return -1;
+			}
+
+			// Free the old blocks buffer.
+			cudaFree(cuda_blocks);
+
+			// Allocate a new blocks buffer.
+			if ( serpent_cuda_allocate_buffer(free_global_memory, total_global_memory, block_count, multiprocessor_count, thread_count, &cuda_blocks, &free_global_memory, &blocks_per_kernel, &blocks_per_thread, &temp) == -1 ) {
+				fprintf(stderr, "Unable to reallocate blocks buffer.\n");
+				return -1;
+			}
+			buffer_allocation_attempts += temp;
+
+			kernel_invocation_attempts++;
 		}
 
 		// Get blocks from global memory.
@@ -810,6 +886,10 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 	// Assign output parameters.
 	(*buffer_size) = free_global_memory;
 
+	// TODO: Add these as output parameters.
+	//fprintf(stderr, "Buffer allocation attempts: %i.\nKernel invocation attempts: %i.\n",
+	//	buffer_allocation_attempts, kernel_invocation_attempts);
+
 	// Return success.
 	return 0;
 }
@@ -827,9 +907,14 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
+	int buffer_allocation_attempts;
+	int kernel_invocation_attempts;
+	int blocks_per_kernel;
+	int blocks_per_thread;
 	int count;
 	int device_number;
 	int multiprocessor_count;
+	int temp;
 	int thread_count;
 	int i;
 
@@ -868,7 +953,6 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		fprintf(stderr, "Unable to get max thread count.\n");
 		return -1;
 	}
-	//fprintf(stdout, "Multiprocessors: %i, threads: %i.\n", multiprocessor_count, thread_count);
 
 	// Copy the subkey to constant memory.
 	cuda_error = cudaMemcpyToSymbol( "cuda_subkey", subkey, sizeof(uint32_t) * SUBKEY_LENGTH);
@@ -883,80 +967,70 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		fprintf(stderr, "Unable to get memory information: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
-	free_global_memory -= SERPENT_CUDA_MEMORY_BUFFER; // Magic number.
-	/*
-	#if defined(__LP64__) || defined(_LP64)
-	fprintf(stderr, "Total global memory: %li.\n", total_global_memory);
-	#else
-	fprintf(stderr, "Total global memory: %i.\n", total_global_memory);
-	#endif
-	*/
 
-	// Calculate number of blocks per thread.
-	int blocks_per_kernel = free_global_memory / sizeof(block128_t);
-	int blocks_per_thread = (blocks_per_kernel / multiprocessor_count) / thread_count;
-	/*
-	#if defined(__LP64__) || defined(_LP64)
-	fprintf(stderr, "Free global memory: %li.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
-	#else
-	fprintf(stderr, "Free global memory: %i.\nBlocks per kernel: %i.\n", free_global_memory, blocks_per_kernel);
-	#endif
-	fprintf(stderr, "Blocks per thread: %i.\n", blocks_per_thread);
-	*/
-
-	// Allocate a buffer for the blocks on the GPU.
-	cuda_error = cudaMalloc( (void**)&cuda_blocks, (int)(sizeof(block128_t) * blocks_per_kernel) );
-	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to malloc blocks: %s.\n", cudaGetErrorString(cuda_error));
+	// Allocate blocks buffer on the GPU.
+	if ( serpent_cuda_allocate_buffer(free_global_memory, total_global_memory, block_count, multiprocessor_count, thread_count, &cuda_blocks, &free_global_memory, &blocks_per_kernel, &blocks_per_thread, &buffer_allocation_attempts) == -1 ) {
+		fprintf(stderr, "Unable to allocate initial buffer.\n");
 		return -1;
 	}
-
+	
 	// Encrypt the blocks.
 	i = 0;
 	while (i < block_count) {
-		//fprintf(stderr, "Running an iteration. i: %i. block_count: %i.\n", i, block_count);
-
 		// Corner case.
 		if ( i + blocks_per_kernel > block_count ) {
 			blocks_per_kernel = block_count - i;
 			blocks_per_thread = blocks_per_kernel / multiprocessor_count / thread_count;
 		}
 
-		// Copy blocks per thread to constant memory.
-		cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
+		// Run the algorithm.
+		kernel_invocation_attempts = 1;
+		while ( true ) {
+			// Move blocks to global memory.
+			cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128_t) * blocks_per_kernel, cudaMemcpyHostToDevice );
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to memcopy blocks: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
+
+			// Copy blocks per thread to constant memory.
+			cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
+
+			// Copy blocks per kernel to constant memory.
+			cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
+			if ( cuda_error != cudaSuccess ) {
+				fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+				return -1;
+			}
+
+			// Run encryption.
+			serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
+			cuda_error = cudaGetLastError();
+			if ( cuda_error == cudaSuccess ) { // Successful run.
+				break;
+			}
+			else if ( cuda_error != cudaErrorMemoryAllocation ) { // Unexpected error.
+				fprintf(stderr, "ERROR invoking the kernel: %s, %i.\n", cudaGetErrorString(cuda_error), cuda_error);
+				return -1;
+			}
+
+			// Free the old blocks buffer.
+			cudaFree(cuda_blocks);
+
+			// Allocate a new blocks buffer.
+			if ( serpent_cuda_allocate_buffer(free_global_memory, total_global_memory, block_count, multiprocessor_count, thread_count, &cuda_blocks, &free_global_memory, &blocks_per_kernel, &blocks_per_thread, &temp) == -1 ) {
+				fprintf(stderr, "Unable to reallocate blocks buffer.\n");
+				return -1;
+			}
+			buffer_allocation_attempts += temp;
+
+			kernel_invocation_attempts++;
 		}
-
-		// Copy blocks per kernel to constant memory.
-		cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		}
-
-		// Move blocks to global memory.
-		cuda_error = cudaMemcpy( cuda_blocks, &(blocks[i]), sizeof(block128_t) * blocks_per_kernel, cudaMemcpyHostToDevice );
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "Unable to memcopy blocks: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		}
-
-		// Run encryption.
-		serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
-                cuda_error = cudaGetLastError();
-                if ( cuda_error != cudaSuccess ) {
-                        fprintf(stderr, "ERROR invoking the kernel: %s.\n", cudaGetErrorString(cuda_error));
-                        return -1;
-                }
-		/*serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count, sizeof(block128_t) * thread_count>>>((uint32_t*)cuda_blocks);
-		cuda_error = cudaGetLastError();
-		if ( cuda_error != cudaSuccess ) {
-			fprintf(stderr, "ERROR invoking the kernel: %s.\n", cudaGetErrorString(cuda_error));
-			return -1;
-		} */
-
+		
 		// Get blocks from global memory.
 		cuda_error = cudaMemcpy( &(blocks[i]), cuda_blocks, sizeof(block128_t) * blocks_per_kernel, cudaMemcpyDeviceToHost );
 		if ( cuda_error != cudaSuccess ) {
@@ -973,6 +1047,10 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 
 	// Assign output parameters.
 	(*buffer_size) = free_global_memory;
+
+	// TODO: Makes this as function output.
+	//fprintf(stderr, "Buffer allocation attempts: %i.\nKernel invocation attempts: %i.\n",
+		//buffer_allocation_attempts, kernel_invocation_attempts);
 
 	// Return success.
 	return 0;
