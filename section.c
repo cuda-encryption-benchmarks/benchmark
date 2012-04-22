@@ -51,6 +51,16 @@ exception_t* section_init(section_t* section, int data_count, enum algorithm alg
 	// Set the algorithm attribute.
 	section->algorithm = algorithm;
 
+	// Initialize the key.
+	section->key.key0.x0 = 0xdeadbeef;
+	section->key.key0.x1 = 0xdeadbeef;
+	section->key.key0.x2 = 0xdeadbeef;
+	section->key.key0.x3 = 0xdeadbeef;
+	section->key.key1.x0 = 0xdeadbeef;
+	section->key.key1.x1 = 0xdeadbeef;
+	section->key.key1.x2 = 0xdeadbeef;
+	section->key.key1.x3 = 0xdeadbeef;
+
 	// Initialize the subsections.
 	// Serial.
 	exception = subsection_init(&(section->subsections[SECTION_SUBSECTION_SERIAL]), data_count, SERIAL);
@@ -85,6 +95,16 @@ exception_t* section_free(section_t* section) {
 
 	// Set algorithm to an impossible value.
 	section->algorithm = -1;
+
+	// Set key to predetermined value.
+	section->key.key0.x0 = 0;
+	section->key.key0.x1 = 0;
+	section->key.key0.x2 = 0;
+	section->key.key0.x3 = 0;
+	section->key.key1.x0 = 0;
+	section->key.key1.x1 = 0;
+	section->key.key1.x2 = 0;
+	section->key.key1.x3 = 0;
 
 	// Free each subsection.
 	for ( i = 0; i < SECTION_SUBSECTION_COUNT; i++ ) {
