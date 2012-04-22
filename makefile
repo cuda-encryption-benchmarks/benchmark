@@ -18,7 +18,7 @@ cfiles =	main \
 		section \
 		statistics \
 		subsection \
-		serpent
+		serpent 
 cufiles = 	cuda_extension \
 		serpent_cu # Linker does not like files with the same name.
 		
@@ -26,49 +26,69 @@ cufiles = 	cuda_extension \
 # Version information.
 major_number = 0
 minor_number = 1
-release_number = 1
+release_number = 2
 version = ${major_number}.${minor_number}.${release_number}
 
-# Output name.
-name = benchmark
+# Binary name.
+binary = benchmark
 
 # Perform default functionality.
-default: compile create clean done
-
-
-# Compile the library (ccc).
-libccc.so:
-	@cd ccc; make; make install; cd ../
+default: compile link tidy done
 
 # Clean the directory.
-clean:
+clean: tidy
 	@echo "  Cleaning."
-	@rm -f *.o
-
+	@rm -f ${binary}
+	@rm -f ${script}
+	@rm -f VERSION
+	@rm -f libccc.so.0
+	@echo "  Done."
 
 # Compile the benchmark.
-compile:
+compile: compile_c compile_cu compile_ccc
+
+# Compile C files.
+compile_c:
 	@for file in ${cfiles}; do \
 		echo "  Compiling $$file.c."; \
 		${ccompiler} ${cflags} -c $$file.c; \
 	done
+
+# Compile CUDA files.
+compile_cu:
 	@for file in ${cufiles}; do \
 		echo "  Compiling $$file.cu."; \
 		${cucompiler} -c $$file.cu; \
 	done
 
-
-# Create the executable.
-create:
-	@echo "  Creating ${name}."
-	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib64/ -L/usr/local/cuda/lib/ ${libraries} -o ${name} *.o
-
+# Compile Cline's C Compendium (CCC).
+compile_ccc:
+	@# This is a bit of a hack; copy and rename the shared object library
+	@# to the local directory rather than installing it.
+	@cd ccc; make; mv libccc.so* ../libccc.so; cd ../; chmod 0600 libccc.so
 
 # Print the conclusion.
 done:
 	@echo "  Done."
 
-# Install the Cline's C Compendium
-# Otherwise executable won't load the shared object library :(
-install: libccc.so
-	@echo "  Done."
+# Link the executable.
+link: link_binary link_hack link_version
+
+# Create the binary file.
+link_binary:
+	@echo "  Creating ${binary}."
+	@${linker} -I/usr/local/cuda/include/ -L./ -L/usr/local/cuda/lib64/ -L/usr/local/cuda/lib/ ${libraries} -o ${binary} *.o
+
+# Hack because gcc either complains about no -lccc, or it complains about no libccc.so.0! Yeesh.
+link_hack:
+	@mv libccc.so libccc.so.0
+
+# Output version information.
+link_version:
+	@echo "  Saving version."
+	@echo ${version} > VERSION
+
+# Clean excess files without removing important compilation output.
+tidy:
+	@echo "  Tidying."
+	@rm -f *.o

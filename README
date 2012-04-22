@@ -1,0 +1,8 @@
+WARNING:
+This product has not yet been officially "released", is 
+currently undergoing heavy development, and may change
+dramatically without warning.
+
+To run, invoke the "benchmark" executable generated. Make
+sure the proper drivers and library environment variables
+are set. More details may be found at NVIDIA's CUDA webpage.

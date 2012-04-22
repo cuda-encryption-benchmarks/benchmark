@@ -83,7 +83,7 @@ void print_usage(char* message) {
 	// Print usage message.
 	fprintf(stdout, "\a\nERROR: %s\n\n", message);
 	fprintf(stdout, "--- CUDA Benchmarks Report ---\n");
-	fprintf(stdout, "USAGE: ./report <iterations> <input>\n");
+	fprintf(stdout, "USAGE: ./benchmark <iterations> <input>\n");
 	fprintf(stdout, "\titerations: The number of iterations to run on the specified input.\n");
 	fprintf(stdout, "\tinput: The input file.\n\n");
 
