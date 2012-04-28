@@ -1,6 +1,13 @@
 
 #include "twofish.h"
 
+typedef struct
+{
+	uint32_t l_key[40];
+	uint32_t s_key[4];
+	uint32_t mk_tab[4 * 256];
+	uint32_t k_len;
+} TwofishInstance;
 
 #define extract_byte(x,n)   ((uint8_t)((x) >> (8 * n)))
 
