@@ -309,7 +309,7 @@ uint32_t *twofish_set_key(TwofishInstance *instance, const uint32_t in_key[], co
     blk[0] = rotr(blk[0] ^ (t0 + t1 + l_key[4 * (i) + 10]), 1);     \
     blk[1] = rotl(blk[1], 1) ^ (t0 + 2 * t1 + l_key[4 * (i) + 11])
 
-exception_t* twofish_encrypt_block(block128_u* block, key256_u* fullkey){
+exception_t* twofish_encrypt_block(TwofishInstance* instance, block128_u* block, key256_u* fullkey){
 
 
 
@@ -323,7 +323,7 @@ exception_t* twofish_encrypt_block(block128_u* block, key256_u* fullkey){
         blk[0] = rotl(blk[0], 1) ^ (t0 + t1 + l_key[4 * (i) +  8]);     \
         blk[1] = rotr(blk[1] ^ (t0 + 2 * t1 + l_key[4 * (i) +  9]), 1)
 
-exception_t* twofish_decrypt_block(block128_t* block, key256_u* fullkey){
+exception_t* twofish_decrypt_block(TwofishInstance* instance, block128_t* block, key256_u* fullkey){
 
 }
 
