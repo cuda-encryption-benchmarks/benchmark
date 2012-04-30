@@ -108,4 +108,11 @@ exception_t* report_write_results(report_t* report);
 exception_t* report_write_system_information(report_t* report);
 
 
+/**	Private function of report_write_system_information() that writes the output of the `lshw` command
+ *	to the report and a file.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_system_information_lshw(report_t* report);
+
+
 #endif // report_H
