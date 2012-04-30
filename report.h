@@ -3,6 +3,10 @@
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309L
 #endif
+// Open large files.
+#define _LARGEFILE64_SOURCE
+// For lstat()
+#define _BSD_SOURCE
 
 #ifndef report_H
 #define report_H
@@ -40,7 +44,7 @@ typedef struct {
 	FILE* file;
 	// The base path for the report's documents.
 	char basepath[REPORT_BASEPATH_LENGTH_MAX];
-	// The filepath for the input file.
+	// The filepath for the file to benchmark.
 	char* input_filepath;
 	// The name of the report without a file extension.
 	char filename[REPORT_FILENAME_LENGTH_MAX];
@@ -90,6 +94,12 @@ exception_t* report_write_compile_latex(report_t* report);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write_methodologies(report_t* report);
+
+
+/**	Private function of report_write() that writes the results of the report.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_results(report_t* report);
 
 
 /**	Private function of report_write() that appends system information to the report.

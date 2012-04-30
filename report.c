@@ -197,7 +197,6 @@ exception_t* report_free(report_t* report) {
 exception_t* report_write(report_t* report) { 
 	char* function_name = "report_write()";
 	exception_t* exception;
-	int i;
 
 	// Validate parameters.
 	if ( report == NULL ) {
@@ -230,18 +229,15 @@ exception_t* report_write(report_t* report) {
 	// Write methodologies.
 	exception = report_write_methodologies(report);
 	if ( exception != NULL ) {
-		fprintf(stdout, "ERROR writing methodologies: %s", exception->message);
+		fprintf(stdout, "ERROR writing methodologies: %s\n", exception->message);
 	}
 
-	// Write subsections.
-	fprintf(report->file, "\\section{Results}\n");
-	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
-		exception = section_write(&(report->sections[i]), report->file);
-		if ( exception != NULL ) {
-			return exception_append(exception, function_name);
-		}
+	// Write results.
+	exception = report_write_results(report);
+	if ( exception != NULL ) {
+		fprintf(stdout, "ERROR writing results: %s\n", exception->message);
 	}
-
+	
 	// Write system information.
 	fprintf(stdout, "Writing system information. ");
 	fflush(stdout);
@@ -530,6 +526,55 @@ exception_t* report_write_methodologies(report_t* report) {
 		"loss of precision, which should be negligible in all but extreme cases " \
 		"(such as having a value which is orders of magnitude larger than the others, " \
 		" or millions of iterations).\n");
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* report_write_results(report_t* report) {
+	char* function_name = "report_write_results()";
+	exception_t* exception;
+	struct stat64 stats;
+	int i;
+
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+
+	// Write results section header.
+	fprintf(report->file, "\\section{Results}\n");
+
+	// Write file statistics.
+	fprintf(report->file, "The following results were generated from " \
+		"a file of size:\n\\begin{verbatim}\n");
+	if ( chdir("../../") == -1 ) { // Move back to get the file stats... (Okay, this is a bit of a poor hack :/ )
+		fprintf(report->file, "Unknown");
+	}
+	else {
+		// Get file stats.
+		if ( lstat64(report->input_filepath, &stats) == -1 ) {
+			fprintf(report->file, "Unknown");
+		}
+		else {
+			fprintf(report->file, "%" PRIuMAX " bytes", stats.st_size);
+		}
+
+		// Move back into report directory.
+		if ( chdir(report->basepath) == -1 ) {
+			return exception_throw("Unable to move back into report directory.", function_name);
+		}
+	}
+	fprintf(report->file, "\n\\end{verbatim}\n");
+
+	// Write each section of the report.
+	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
+		exception = section_write(&(report->sections[i]), report->file);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
 
 	// Return success.
 	return NULL;
