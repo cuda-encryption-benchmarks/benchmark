@@ -481,8 +481,15 @@ exception_t* report_write_methodologies(report_t* report) {
 	// Write section header.
 	fprintf(report->file, "\\section{Methodologies}\n");
 
-	// Get and write clock resolution using clock_getres().
-        fprintf(report->file, "\\subsection{Timing}\n" \
+	// Write benchmark timing.
+	fprintf(report->file, "\\subsection{Benchmark Timing}\n" \
+		"When an algorithm is benchmarked on a file, the entire file is read " \
+		"into memory, the benchmark timing started, the algorithm run on the file, " \
+		"the benchmark timing stopped, and the file written back to disk. This " \
+		"eliminates disk I/O as a factor of uncertainty in the benchmarking time.");
+
+	// Write clock resolution using clock_getres().
+        fprintf(report->file, "\\subsection{Clock Resolution}\n" \
 		"Benchmarking times are measured using the \\verb-clock_getres()- function. " \
 		"Note that the accuracy of this method may be system-dependent. " \
 		"The resolution of this clock is:\n \\begin{verbatim}\n");

@@ -12,3 +12,5 @@ results
 report
 runs
 VERSION
+*.o
+TODO
