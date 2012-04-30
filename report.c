@@ -218,6 +218,7 @@ exception_t* report_write(report_t* report) {
 	fprintf(report->file, "\\documentclass{article}\n\n");
 	fprintf(report->file, "\\usepackage{amsmath}\n\n");
 	fprintf(report->file, "\\usepackage{float}\n\n");
+	fprintf(report->file, "\\usepackage[left=2cm,right=2cm,top=2cm,bottom=3cm,nohead]{geometry}\n");
 	fprintf(report->file, "\\title{CUDA Benchmarking Report}\n\\author{Automatically Generated}\n\n");
 	fprintf(report->file, "\\begin{document}\n\n");
 	fprintf(report->file, "\\maketitle\n\n");
@@ -589,6 +590,12 @@ exception_t* report_write_system_information(report_t* report) {
         }
 	fprintf(report->file,"\n\\end{verbatim}\n\n");
 
+	// Write CUDA devices
+	exception = report_write_system_information_cuda_devices(report);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
 	// Write processor count.
 	fprintf(report->file, "\\subsection{Processor Count}\n" \
 		"The number of logical processors on this machine is:\n\\begin{verbatim}\n");
@@ -603,6 +610,42 @@ exception_t* report_write_system_information(report_t* report) {
 	exception = report_write_system_information_lshw(report);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* report_write_system_information_cuda_devices(report_t* report) {
+	char* function_name = "report_write_system_information_cuda_devices()";
+	int device_count;
+	int i;
+	
+	// Validate parameters.
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+
+	// Write section header.
+	fprintf(report->file, "\\subsection{CUDA Devices}\n" \
+		"Note that only the first device found is used for the algorithms.\n");
+
+	// Get number of CUDA devices.
+	if ( cuda_device_count(&device_count) == -1 ) {
+		return exception_throw("Unable to get device count.", function_name);
+	}
+
+	// Write each device. 
+	if ( device_count == 0 ) {
+		fprintf(report->file, "No CUDA-capable devices found.\n");
+	}
+	else {
+		for ( i = 0; i < device_count; i++ ) {
+			if ( cuda_device_properties_report_write(report->file, i) == -1 ) {
+				return exception_throw("Unable to write device properties.", function_name);
+			}
+		}
 	}
 
 	// Return success.

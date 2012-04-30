@@ -19,6 +19,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "cuda_extension.h"
 #include "section.h"
 #include "ccc/ccc.h"
 #include "typedef.h"
@@ -106,6 +107,12 @@ exception_t* report_write_results(report_t* report);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write_system_information(report_t* report);
+
+
+/**	Private function of report_write_system_information() that writes data from each CUDA-capable device to the report.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_system_information_cuda_devices(report_t* report);
 
 
 /**	Private function of report_write_system_information() that writes the output of the `lshw` command

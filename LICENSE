@@ -7,6 +7,10 @@ also derived from other works for TrueCrypt; their respective
 licenses are included below. All other portions of this project are
 licensed under the GNU GPL License Version 3 (see below).
 
+This software contains source code provided by NVIDIA Corporation.
+(specifically, the device query for the report was based on the
+deviceQuery source code in the NVIDIA GPU Computing SDK.)
+
 ____________________________________________________________
 
  GNU GENERAL PUBLIC LICENSE
