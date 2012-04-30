@@ -486,13 +486,13 @@ exception_t* report_write_methodologies(report_t* report) {
 		"When an algorithm is benchmarked on a file, the entire file is read " \
 		"into memory, the benchmark timing started, the algorithm run on the file, " \
 		"the benchmark timing stopped, and the file written back to disk. This " \
-		"eliminates disk I/O as a factor of uncertainty in the benchmarking time.");
+		"eliminates disk I/O as a factor of uncertainty in the benchmarking time.\n");
 
 	// Write clock resolution using clock_getres().
         fprintf(report->file, "\\subsection{Clock Resolution}\n" \
 		"Benchmarking times are measured using the \\verb-clock_getres()- function. " \
 		"Note that the accuracy of this method may be system-dependent. " \
-		"The resolution of this clock is:\n \\begin{verbatim}\n");
+		"The resolution of this clock is:\n\\begin{verbatim}\n");
         if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
                 fprintf(report->file, "Unknown");
 		fprintf(stdout, "ERROR getting clock resolution: ");
@@ -502,6 +502,18 @@ exception_t* report_write_methodologies(report_t* report) {
         else {
                 fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
         }
+	fprintf(report->file,"\n\\end{verbatim}\n\n");
+
+	// Write parallel method (Open MP).
+	fprintf(report->file,"\\subsection{Parallelization}\n" \
+		"The method used for parallelization of the algorithms is OpenMP. " \
+		"The algorithm makes use of every logical processor on the machine. " \
+		"The number of logical processors on this machine is:\n\\begin{verbatim}\n");
+	#if defined(_OPENMP)
+		fprintf(report->file, "%i", omp_get_num_procs());
+	#else
+		fprintf(report->file, "Unknown");
+	#endif
 	fprintf(report->file,"\n\\end{verbatim}\n\n");
 
 	// Write standard deviation.
