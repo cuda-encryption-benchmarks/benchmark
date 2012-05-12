@@ -9,6 +9,10 @@
 #ifndef serpent_H
 #define serpent_H
 
+#ifdef DEBUG
+#define DEBUG_SERPENT
+#endif
+
 
 #include <inttypes.h>
 #include <omp.h>
@@ -89,15 +93,13 @@ exception_t* serpent_parallel_decrypt(key256_t* user_key, block128_t* blocks, in
 
 
 /**	Private function to decrypt a single block of serpent.
- *	@return	NULL on success, exception_t* on failure. 
  */
-exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey);
+void serpent_decrypt_block(block128_t* block, uint32_t* subkey);
 
 
 /**	Private function to encrypt a single block of serpent.
- *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey);
+void serpent_encrypt_block(block128_t* block, uint32_t* subkey);
 
 
 /**	Encrypt the specified array of 128-bit blocks in parallel through the Serpent encryption algorithm.

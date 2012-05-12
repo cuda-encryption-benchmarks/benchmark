@@ -500,6 +500,25 @@ __device__ void serpent_cuda_decrypt_block(block128_t* block, uint32_t* subkey) 
 
 
 __global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
+	int index = (blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x;
+	int i;
+
+	// Encrypted the minimal number of blocks.
+	for ( i = 0; i < blocks_per_thread; i++ ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
+
+		index += blockDim.x;
+	}
+
+	// Encrypt the extra blocks that fall outside the minimal number of block.s
+	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
+	if ( index < blocks_per_kernel ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
+	}
+}
+
+/*
+__global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
 	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
 	int i;
 
@@ -514,6 +533,7 @@ __global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
 		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
 	}
 }
+*/
 
 
 __device__ void serpent_cuda_encrypt_block(block128_t* block, uint32_t* subkey) {
@@ -757,6 +777,7 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 	int i;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( subkey == NULL ) {
 		fprintf(stderr, "subkey was NULL.\n");
 		return -1;
@@ -773,6 +794,7 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		fprintf(stderr, "buffer_size was NULL.\n");
 		return -1;
 	}
+	#endif
 
 	// Get the number of devices.
 	cuda_error = cudaGetDeviceCount( &count );
@@ -919,6 +941,7 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 	int i;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( subkey == NULL ) {
 		fprintf(stderr, "subkey was NULL.\n");
 		return -1;
@@ -935,6 +958,7 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 		fprintf(stderr, "buffer_size was NULL.\n");
 		return -1;
 	}
+	#endif
 
 	// Get the number of devices.
 	cuda_error = cudaGetDeviceCount( &count );

@@ -425,6 +425,7 @@ exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, en
 	exception_t* exception;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
@@ -434,6 +435,7 @@ exception_t* serpent(key256_t* user_key, block128_t* blocks, int block_count, en
 	if ( buffer_size == NULL ) {
 		return exception_throw("buffer_size was NULL.", function_name);
 	}
+	#endif
 
 	// Run the appropirate algorithm.
 	switch(mode) {
@@ -491,6 +493,7 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int bl
 	uint32_t* subkey;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
@@ -500,6 +503,7 @@ exception_t* serpent_cuda_decrypt(key256_t* user_key, block128_t* blocks, int bl
 	if ( buffer_size == NULL ) {
 		return exception_throw("buffer_size was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -529,6 +533,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 	uint32_t* subkey;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
@@ -538,6 +543,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 	if ( buffer_size == NULL ) {
 		return exception_throw("buffer_size was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -561,7 +567,7 @@ exception_t* serpent_cuda_encrypt(key256_t* user_key, block128_t* blocks, int bl
 }
 
 
-exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
+void serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
 	//char* function_name = "serpent_decrypt_block()";
 	uint32_t a, b, c, d, e;
 	int j;
@@ -601,13 +607,10 @@ exception_t* serpent_decrypt_block(block128_t* block, uint32_t* subkey) {
 	block->x1 = mirror_bytes32(d);
 	block->x2 = mirror_bytes32(b);
 	block->x3 = mirror_bytes32(e);
-
-	// Return success.
-	return NULL;
 }
 
 
-exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
+void serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
 	//char* function_name = "serpent_encrypt_block()";
 	//exception_t* exception;
 	uint32_t a, b, c, d, e;
@@ -650,9 +653,6 @@ exception_t* serpent_encrypt_block(block128_t* block, uint32_t* subkey) {
 	block->x1 = mirror_bytes32(e);
 	block->x2 = mirror_bytes32(b);
 	block->x3 = mirror_bytes32(a);
-
-	// Return success.
-	return NULL;
 }
 
 
@@ -665,12 +665,14 @@ exception_t* serpent_parallel_decrypt(key256_t* user_key, block128_t* blocks, in
 	int thread_index;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -722,12 +724,14 @@ exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, in
 	int thread_index;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -774,15 +778,16 @@ exception_t* serpent_serial_decrypt(key256_t* user_key, block128_t* blocks, int 
 	char* function_name = "serpent_serial_decrypt()";
 	exception_t* exception;
 	uint32_t* subkey;
-	//uint32_t a, b, c, d, e;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -792,10 +797,7 @@ exception_t* serpent_serial_decrypt(key256_t* user_key, block128_t* blocks, int 
 
 	// Decrypt each block.
 	for ( int i = 0; i < block_count; i++ ) {
-		exception = serpent_decrypt_block(&(blocks[i]), subkey);
-		if ( exception != NULL ) {
-			return exception_append(exception, function_name);
-		}
+		serpent_decrypt_block(&(blocks[i]), subkey);
 	}
 
 	// Free the subkey.
@@ -815,12 +817,14 @@ exception_t* serpent_serial_encrypt(key256_t* user_key, block128_t* blocks, int 
 	uint32_t* subkey;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
 	if ( blocks == NULL ) {
 		return exception_throw("blocks was NULL.", function_name);
 	}
+	#endif
 
 	// Initialize the subkey.
 	exception = serpent_init_subkey(user_key, &subkey);
@@ -830,10 +834,7 @@ exception_t* serpent_serial_encrypt(key256_t* user_key, block128_t* blocks, int 
 
 	// Encrypt each block.
 	for ( int i = 0; i < block_count; i++ ) {
-		exception = serpent_encrypt_block(&(blocks[i]), subkey);
-		if ( exception != NULL ) {
-			return exception_throw("blocks was NULL.", function_name);
-		}
+		serpent_encrypt_block(&(blocks[i]), subkey);
 	}
 
 	// Free the subkey.
@@ -855,12 +856,14 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32_t** subkey) {
 	uint32_t a, b, c, d, e;
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( user_key == NULL ) {
 		return exception_throw("user_key was NULL.", function_name);
 	}
 	if ( subkey == NULL ) {
 		return exception_throw("subkey was NULL.", function_name);
 	}
+	#endif
 
 	// Allocate space for genkey.
 	genkey = (uint32_t*)malloc(sizeof(uint32_t) * PREKEY_SIZE);
@@ -929,12 +932,16 @@ exception_t* serpent_init_subkey(key256_t* user_key, uint32_t** subkey) {
 
 
 exception_t* serpent_free_subkey(uint32_t* subkey) {
+	#ifdef DEBUG_SERPENT
 	char* function_name = "serpent_free_subkey()";
+	#endif
 
 	// Validate parameters.
+	#ifdef DEBUG_SERPENT
 	if ( subkey == NULL ) {
 		return exception_throw("subkey was NULL.", function_name);
 	}
+	#endif
 
 	// Free the subkey.
 	// Note that the original key be freed, too.
