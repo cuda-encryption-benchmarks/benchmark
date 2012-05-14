@@ -503,14 +503,14 @@ __global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
 	int index = (blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x;
 	int i;
 
-	// Encrypted the minimal number of blocks.
+	// Decrypt the minimal number of blocks.
 	for ( i = 0; i < blocks_per_thread; i++ ) {
 		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
 
 		index += blockDim.x;
 	}
 
-	// Encrypt the extra blocks that fall outside the minimal number of block.s
+	// Decrypt the extra blocks that fall outside the minimal number of blocks.
 	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
 	if ( index < blocks_per_kernel ) {
 		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
@@ -534,7 +534,6 @@ __global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
 	}
 }
 */
-
 
 __device__ void serpent_cuda_encrypt_block(block128_t* block, uint32_t* subkey) {
 	uint32_t a, b, c, d, e;
@@ -600,74 +599,101 @@ __global__ void serpent_cuda_encrypt_blocks( block128_t* cuda_blocks ) {
         }
 }
 
+/* A better attempt at stronger global memory coalescing. Still did not turn out well.
+#define UINT32_PER_BLOCK128 4
 
-/* An attempt at global memory coalescing which turned out slower than the original...
+__device__ void serpent_cuda_encrypt_block(uint32_t* shared_blocks, int shared_index, uint32_t* subkey);
+__global__ void serpent_cuda_encrypt_blocks(uint32_t* cuda_blocks);
+
 __global__ void serpent_cuda_encrypt_blocks( uint32_t* cuda_blocks ) {
-	//int index = ((blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x);
-	int left_index;
-	int right_index = ((blockIdx.x * (blockDim.x * 4 * blocks_per_thread)) + threadIdx.x);
-	int i;
+	int threads_per_multiprocessor = blockDim.x;
+        int cache_index = (blockIdx.x * (UINT32_PER_BLOCK128 * threads_per_multiprocessor * blocks_per_thread));
+        int i;
+
+        // Encrypt the minimal number of blocks.
+        for ( i = 0; i < blocks_per_thread; i++ ) {
+                // Encrypt the blocks at the cache index
+                serpent_cuda_encrypt_block(&(cuda_blocks[cache_index]), cuda_subkey, threads_per_multiprocessor);
+
+		// Adjust cache index value.
+		cache_index += (threads_per_multiprocessor * UINT32_PER_BLOCK128);
+	}
+
+	// Encrypt the extra blocks that fall outside the minimal number of block.
+	// NOTE: DOES NOT WORK and is incomplete.
+	//cache_index = (gridDim.x * (threads_per_multiprocessor * blocks_per_thread)) + (blockIdx.x * threads_per_multiprocessor); // (end of array + multiprocessor block).
+	//if ( cache_index > blocks_per_kernel) {
+	//	return;
+	//}
+	//else if ( (cache_index + threads_per_multiprocessor) > blocks_per_kernel ) {
+	//	if ( threadIdx.x + cache_index > blocks_per_kernel ) {
+	//		return;
+	//	}
+	//	threads_per_multiprocessor = (blocks_per_kernel - cache_index);
+	//}
+}
+__device__ void serpent_cuda_encrypt_block(uint32_t* global_blocks, uint32_t* subkey, int threads_per_multiprocessor) {
 	// Array that allows collaborative loading of blocks into shared memory.
 	extern __shared__ uint32_t shared_blocks[];
+	uint32_t a, b, c, d, e;
+	int index = threadIdx.x;
+	int j;
 
-	// Encrypted the minimal number of blocks.
-	for ( i = 0; i < blocks_per_thread; i++ ) {
-		// Load blocks from global memory into shared memory using coalescing.
-		left_index = threadIdx.x;
-		shared_blocks[left_index] = cuda_blocks[right_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		shared_blocks[left_index] = cuda_blocks[right_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		shared_blocks[left_index] = cuda_blocks[right_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		shared_blocks[left_index] = cuda_blocks[right_index];
-		right_index += blockDim.x;
-		__syncthreads();
+	// Collaboratively load blocks into shared memory.
+	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
+	index -= (threads_per_multiprocessor * 3);
+	__syncthreads();
 
-		//shared_blocks[threadIdx.x] = ((uint32_t*)cuda_blocks)[index];
-		//shared_blocks[threadIdx.x + blockDim.x] = ((uint32_t*)cuda_blocks)[index + blockDim.x];
-		//shared_blocks[threadIdx.x + (2 * blockDim.x)] = ((uint32_t*)cuda_blocks)[index + (2 * blockDim.x)];
-		//shared_blocks[threadIdx.x + (3 * blockDim.x)] = ((uint32_t*)cuda_blocks)[index + (3 * blockDim.x)]; 
+	// Read from shared memory.
+	index *= UINT32_PER_BLOCK128;
+	a = shared_blocks[index];
+	b = shared_blocks[index+1];
+	c = shared_blocks[index+2];
+	d = shared_blocks[index+3];
 
-		// Encrypt the block.
-		serpent_cuda_encrypt_block(&(((block128_t*)shared_blocks)[threadIdx.x]), cuda_subkey);
-		__syncthreads();
+	// Encrypt the current block.
+	j = 1;
+	do {
+		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
+		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
+		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
+		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
+		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
+		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
+		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
+		afterS6(KX); afterS6(S7);
 
-		// Write blocks to global memory.
-		left_index = threadIdx.x;
-		right_index -= blockDim.x * 4;
-		cuda_blocks[right_index] = shared_blocks[left_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		cuda_blocks[right_index] = shared_blocks[left_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		cuda_blocks[right_index] = shared_blocks[left_index];
-		left_index += blockDim.x;
-		right_index += blockDim.x;
-		cuda_blocks[right_index] = shared_blocks[left_index];
-		right_index += blockDim.x;
-		__syncthreads();
+		if (j == 4)
+			break;
 
-		//((uint32_t*)cuda_blocks)[index] = shared_blocks[threadIdx.x];
-		//((uint32_t*)cuda_blocks)[index + blockDim.x] = shared_blocks[threadIdx.x + blockDim.x];
-		//((uint32_t*)cuda_blocks)[index + (2 * blockDim.x)] = shared_blocks[threadIdx.x + (2 * blockDim.x)];
-		//((uint32_t*)cuda_blocks)[index + (3 * blockDim.x)] = shared_blocks[threadIdx.x + (3 * blockDim.x)]; 
+		++j;
+		c = b;
+		b = e;
+		e = d;
+		d = a;
+		a = e;
+		subkey += 32;
+		beforeS0(linear_transformation);
+	} while (1);
+	afterS7(KX);
 
-		// Increment the index.
-		//index += blockDim.x * 4;
-	}
+	// Write blocks back to global memory.
+	global_blocks[index] = mirror_bytes32_cu(d);
+	global_blocks[index+1] = mirror_bytes32_cu(e);
+	global_blocks[index+2] = mirror_bytes32_cu(b);
+	global_blocks[index+3] = mirror_bytes32_cu(a);
+	__syncthreads();
+}
 
-	// Encrypt the extra blocks that fall outside the minimal number of block.s
-	int index = (gridDim.x * blockDim.x * blocks_per_thread) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
-	if ( index < block_count ) {
-		serpent_cuda_encrypt_block(&(((block128_t*)cuda_blocks)[index]), cuda_subkey);
-	}
-} */
+serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count, (sizeof(block128_t) * thread_count)>>>((uint32_t*)cuda_blocks);
 
+ */
 
 __device__ uint32_t mirror_bytes32_cu(uint32_t x) {
 	uint32_t out;
