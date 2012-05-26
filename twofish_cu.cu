@@ -13,7 +13,7 @@ __device__ void twofish_cuda_decrypt_block(block128_t* block);
 
 /**     Decrypt the specified array of blocks through a CUDA kernel.
  */
-__global__ void twofish_cuda_decrypt_blocks(block128_t* cuda_blocks);
+__global__ void twofish_cuda_decrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab);
 
 
 /**     Encrypt a single block on the device.
@@ -23,7 +23,7 @@ __device__ void twofish_cuda_encrypt_block(block128_t* block);
 
 /**     Encrypt the specified array of blocks through a CUDA kernel.
  */
-__global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks);
+__global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab);
 
 
 /**     Flip the bytes of the specified 32-bit unsigned integer.
@@ -34,11 +34,13 @@ __global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks);
 __device__ uint32_t twofish_mirror_bytes32(uint32_t x);
 
 
+// It turns out that having l_key and mk_tab in shared memory actually
+// results in more of a performance boost than constant memory. This may
+// be due to a limited amount of constant memory...
+__shared__ uint32_t l_key[40];
+__shared__ uint32_t mk_tab[1024];
+
 // Constant variables in CUDA must be declared with a static scope.
-// Some variables are prefixed with the file name because of
-// "duplicate global variable looked up by string name" errors.
-__device__ __constant__ uint32_t l_key[40];
-__device__ __constant__ uint32_t mk_tab[1024];
 // The total number of blocks being decrypted by a single CUDA thread.
 __device__ __constant__ int twofish_blocks_per_thread;
 // The total number of blocks being decrypted in the entire CUDA kernel.
@@ -139,7 +141,7 @@ __device__ void twofish_cuda_encrypt_block(block128_t* block) {
 		blk[0] = rotr_fixed(blk[0] ^ (t0 + t1 + l_key[4 * (i) + 10]), 1);
 		blk[1] = rotl_fixed(blk[1], 1) ^ (t0 + 2 * t1 + l_key[4 * (i) + 11]);
 	}
-	/* "Too many resources request for launch"
+	/* "Too many resources request for launch" :(
 	f_rnd(0); f_rnd(1); f_rnd(2); f_rnd(3);
 	f_rnd(4); f_rnd(5); f_rnd(6); f_rnd(7);
 	*/
@@ -151,9 +153,23 @@ __device__ void twofish_cuda_encrypt_block(block128_t* block) {
 	block->x3 = twofish_mirror_bytes32(blk[1] ^ l_key[7]);
 }
 
-__global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks) {
+
+__global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab) {
 	int index = (blockIdx.x * (blockDim.x * twofish_blocks_per_thread)) + threadIdx.x;
 	int i;
+
+	// Load l_key into shared memory.
+	i = threadIdx.x;
+	if ( i < 40 ) {
+		l_key[i] = cuda_l_key[i];
+	}
+
+	// Load mk_tab into shared memory.
+	while ( i < 1024 ) {
+		mk_tab[i] = cuda_mk_tab[i];
+		i += blockDim.x;
+	}
+	__syncthreads();
 
 	// Encrypt the minimal number of blocks.
 	for ( i = 0; i < twofish_blocks_per_thread; i++ ) {
@@ -178,11 +194,13 @@ int twofish_cuda_encrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 	// This variable will need to be manually calculated and updated if
 	// the algorithm implementation changes (but if you know of a way
 	// to proceedurally do this, please, feel free...).
-	const int REGISTERS_PER_THREAD = 19;
+	const int REGISTERS_PER_THREAD = 8;
 	block128_t* cuda_blocks;
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
+	uint32_t* cuda_l_key;
+	uint32_t* cuda_mk_tab;
 	int buffer_allocation_attempts;
 	int kernel_invocation_attempts;
 	int blocks_per_kernel;
@@ -232,15 +250,27 @@ int twofish_cuda_encrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 		return -1;
 	}
 
-	// Copy l_key and mk_tab to constant memory.
-	cuda_error = cudaMemcpyToSymbol("l_key", instance->l_key, sizeof(uint32_t) * 40);
+	// Allocate space for l_key and mk_tab on the device.
+	cuda_error = cudaMalloc((void**)&cuda_l_key, sizeof(uint32_t) * 40);
 	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to copy l_key to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+		fprintf(stderr, "Unable to malloc cuda_l_key: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
-	cuda_error = cudaMemcpyToSymbol("mk_tab", instance->mk_tab, sizeof(uint32_t) * 1024);
+	cuda_error = cudaMalloc((void**)&cuda_mk_tab, sizeof(uint32_t) * 1024);
 	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to copy mk_tab to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+		fprintf(stderr, "Unable to malloc cuda_mk_tab: %s.\n", cudaGetErrorString(cuda_error));
+		return -1;
+	}
+
+	// Copy l_key and mk_tab to the device.
+	cuda_error = cudaMemcpy(cuda_l_key, instance->l_key, sizeof(uint32_t) * 40, cudaMemcpyHostToDevice);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to copy l_key to device: %s.\n", cudaGetErrorString(cuda_error));
+		return -1;
+	}
+	cuda_error = cudaMemcpy(cuda_mk_tab, instance->mk_tab, sizeof(uint32_t) * 1024, cudaMemcpyHostToDevice);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to copy mk_tab to device: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 
@@ -291,7 +321,7 @@ int twofish_cuda_encrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 			}
 
 			// Run encryption.
-			twofish_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
+			twofish_cuda_encrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks, cuda_l_key, cuda_mk_tab);
 			cuda_error = cudaGetLastError();
 			if ( cuda_error == cudaSuccess ) { // Successful run.
 				break;
@@ -328,6 +358,10 @@ int twofish_cuda_encrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 	// Free blocks from global memory.
 	cudaFree(cuda_blocks);
 
+	// Free l_key and mk_tab from global memory.
+	cudaFree(cuda_l_key);
+	cudaFree(cuda_mk_tab);
+
 	// Assign output parameters.
 	(*buffer_size) = free_global_memory;
 
@@ -361,8 +395,7 @@ __device__ void twofish_cuda_decrypt_block(block128_t* block) {
 	}
 	/* "Too many resources request for launch"
 	f_rnd(0); f_rnd(1); f_rnd(2); f_rnd(3);
-	f_rnd(4); f_rnd(5); f_rnd(6); f_rnd(7);
-	*/
+	f_rnd(4); f_rnd(5); f_rnd(6); f_rnd(7); */
 
 	// Output whitening.
 	block->x0 = twofish_mirror_bytes32(blk[2] ^ l_key[0]);
@@ -372,9 +405,22 @@ __device__ void twofish_cuda_decrypt_block(block128_t* block) {
 }
 
 
-__global__ void twofish_cuda_decrypt_blocks(block128_t* cuda_blocks) {
+__global__ void twofish_cuda_decrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab) {
 	int index = (blockIdx.x * (blockDim.x * twofish_blocks_per_thread)) + threadIdx.x;
 	int i;
+
+	// Load l_key into shared memory.
+	i = threadIdx.x;
+	if ( i < 40 ) {
+		l_key[i] = cuda_l_key[i];
+	}
+
+	// Load mk_tab into shared memory.
+	while ( i < 1024 ) {
+		mk_tab[i] = cuda_mk_tab[i];
+		i += blockDim.x;
+	}
+	__syncthreads();
 
 	// Encrypt the minimal number of blocks.
 	for ( i = 0; i < twofish_blocks_per_thread; i++ ) {
@@ -399,11 +445,13 @@ int twofish_cuda_decrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 	// This variable will need to be manually calculated and updated if
 	// the algorithm implementation changes (but if you know of a way
 	// to proceedurally do this, please, feel free...).
-	const int REGISTERS_PER_THREAD = 19;
+	const int REGISTERS_PER_THREAD = 8;
 	block128_t* cuda_blocks;
 	cudaError_t cuda_error;
 	size_t total_global_memory;
 	size_t free_global_memory;
+	uint32_t* cuda_l_key;
+	uint32_t* cuda_mk_tab;
 	int buffer_allocation_attempts;
 	int kernel_invocation_attempts;
 	int blocks_per_kernel;
@@ -453,15 +501,27 @@ int twofish_cuda_decrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 		return -1;
 	}
 
-	// Copy l_key and mk_tab to constant memory.
-	cuda_error = cudaMemcpyToSymbol("l_key", instance->l_key, sizeof(uint32_t) * 40);
+	// Allocate space for l_key and mk_tab on the device.
+	cuda_error = cudaMalloc((void**)&cuda_l_key, sizeof(uint32_t) * 40);
 	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to copy l_key to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+		fprintf(stderr, "Unable to malloc cuda_l_key: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
-	cuda_error = cudaMemcpyToSymbol("mk_tab", instance->mk_tab, sizeof(uint32_t) * 1024);
+	cuda_error = cudaMalloc((void**)&cuda_mk_tab, sizeof(uint32_t) * 1024);
 	if ( cuda_error != cudaSuccess ) {
-		fprintf(stderr, "Unable to copy mk_tab to constant memory: %s.\n", cudaGetErrorString(cuda_error));
+		fprintf(stderr, "Unable to malloc cuda_mk_tab: %s.\n", cudaGetErrorString(cuda_error));
+		return -1;
+	}
+
+	// Copy l_key and mk_tab to the device.
+	cuda_error = cudaMemcpy(cuda_l_key, instance->l_key, sizeof(uint32_t) * 40, cudaMemcpyHostToDevice);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to copy l_key to device: %s.\n", cudaGetErrorString(cuda_error));
+		return -1;
+	}
+	cuda_error = cudaMemcpy(cuda_mk_tab, instance->mk_tab, sizeof(uint32_t) * 1024, cudaMemcpyHostToDevice);
+	if ( cuda_error != cudaSuccess ) {
+		fprintf(stderr, "Unable to copy mk_tab to device: %s.\n", cudaGetErrorString(cuda_error));
 		return -1;
 	}
 
@@ -512,7 +572,7 @@ int twofish_cuda_decrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 			}
 
 			// Run decryption.
-			twofish_cuda_decrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks);
+			twofish_cuda_decrypt_blocks<<<multiprocessor_count, thread_count>>>(cuda_blocks, cuda_l_key, cuda_mk_tab);
 			cuda_error = cudaGetLastError();
 			if ( cuda_error == cudaSuccess ) { // Successful run.
 				break;
@@ -548,6 +608,10 @@ int twofish_cuda_decrypt_cu(twofish_instance_t* instance, block128_t* blocks, in
 
 	// Free blocks from global memory.
 	cudaFree(cuda_blocks);
+
+	// Free l_key and mk_tab from global memory.
+	cudaFree(cuda_l_key);
+	cudaFree(cuda_mk_tab);
 
 	// Assign output parameters.
 	(*buffer_size) = free_global_memory;
