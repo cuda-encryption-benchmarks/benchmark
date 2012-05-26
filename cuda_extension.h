@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+#include "block128.h"
+
 
 /**	Gets the number of CUDA-capable devices.
  *	@return	0 on success, -1 on failure.

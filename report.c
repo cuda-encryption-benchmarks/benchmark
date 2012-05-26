@@ -81,6 +81,11 @@ exception_t* report_init(report_t* report, char* input_filepath, int data_count)
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
+	// Twofish section.
+	exception = section_init(&(report->sections[REPORT_SECTION_TWOFISH]), data_count, TWOFISH);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
 
 	// Return success.
 	fprintf(stdout, "\n");

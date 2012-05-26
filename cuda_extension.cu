@@ -95,11 +95,11 @@ int cuda_device_properties_report_write(FILE* file, int device_number) {
 	fprintf(file, "\\subsubsection{%s}\n", device_properties.name);
 
 	// Write table header.
-        fprintf(file, "\\begin{figure}[H]\n" \
-                "\\caption{Device \\#%i Properties}\n\\centering\n", device_number);
+	fprintf(file, "\\begin{figure}[H]\n" \
+		"\\caption{Device \\#%i Properties}\n\\centering\n", device_number);
 
-        // Write tabular head.
-        fprintf(file, "\\begin{tabular}[c]{|p{7cm}|p{7cm}|}\n\\hline\n");
+	// Write tabular head.
+	fprintf(file, "\\begin{tabular}[c]{|p{7cm}|p{7cm}|}\n\\hline\n");
 
 	// Write data.
 	fprintf(file, "Name & %s \\\\\\hline\n", device_properties.name);
@@ -185,7 +185,7 @@ int cuda_device_properties_report_write(FILE* file, int device_number) {
 	#endif
 
 	// Write tabular and table tails. 
-        fprintf(file, "\\end{tabular}\n\\end{figure}\n");
+	fprintf(file, "\\end{tabular}\n\\end{figure}\n");
 	
 	return 0;
 }

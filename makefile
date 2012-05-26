@@ -18,9 +18,11 @@ cfiles =	main \
 		section \
 		statistics \
 		subsection \
-		serpent 
+		serpent \
+		twofish
 cufiles = 	cuda_extension \
-		serpent_cu # Linker does not like files with the same name.
+		serpent_cu \
+		twofish_cu # Linker does not like files with the same name.
 		
 
 # Version information.

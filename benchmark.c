@@ -77,7 +77,7 @@ exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algor
 		exception = serpent(key, blocks, block_count, mode, encryption, &buffer_size);
 		break;
 	case TWOFISH:
-		return exception_throw("Twofish not implemented.", function_name);
+		exception = twofish(key, blocks, block_count, mode, encryption, &buffer_size);
 		break;
 	default:
 		return exception_throw("Unrecognized algorithm.", function_name);

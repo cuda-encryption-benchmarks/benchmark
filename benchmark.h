@@ -14,6 +14,7 @@
 #include "file.h"
 #include "key.h"
 #include "serpent.h"
+#include "twofish.h"
 #include "typedef.h"
 
 

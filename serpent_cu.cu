@@ -1,4 +1,4 @@
-// See serpent.h
+// See serpent.h for legal information.
 
 #include "serpent.h"
 
@@ -34,27 +34,27 @@
 
 // The linear transformation.
 #define linear_transformation(i,a,b,c,d,e) {\
-        a = rotl_fixed(a, 13);   \
-        c = rotl_fixed(c, 3);    \
-        d = rotl_fixed(d ^ c ^ (a << 3), 7);     \
-        b = rotl_fixed(b ^ a ^ c, 1);    \
-        a = rotl_fixed(a ^ b ^ d, 5);       \
-        c = rotl_fixed(c ^ d ^ (b << 7), 22);}
+	a = rotl_fixed(a, 13);   \
+	c = rotl_fixed(c, 3);    \
+	d = rotl_fixed(d ^ c ^ (a << 3), 7);     \
+	b = rotl_fixed(b ^ a ^ c, 1);    \
+	a = rotl_fixed(a ^ b ^ d, 5);       \
+	c = rotl_fixed(c ^ d ^ (b << 7), 22);}
 
 // The inverse linear transformation.
-#define inverse_linear_transformation(i,a,b,c,d,e)        {\
-        c = rotr_fixed(c, 22);   \
-        a = rotr_fixed(a, 5);    \
-        c ^= d ^ (b << 7);      \
-        a ^= b ^ d;             \
-        b = rotr_fixed(b, 1);    \
-        d = rotr_fixed(d, 7) ^ c ^ (a << 3);     \
-        b ^= a ^ c;             \
-        c = rotr_fixed(c, 3);    \
-        a = rotr_fixed(a, 13);}
+#define inverse_linear_transformation(i,a,b,c,d,e)	{\
+	c = rotr_fixed(c, 22);   \
+	a = rotr_fixed(a, 5);    \
+	c ^= d ^ (b << 7);      \
+	a ^= b ^ d;	     \
+	b = rotr_fixed(b, 1);    \
+	d = rotr_fixed(d, 7) ^ c ^ (a << 3);     \
+	b ^= a ^ c;	     \
+	c = rotr_fixed(c, 3);    \
+	a = rotr_fixed(a, 13);}
 
 #define S0(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r3 ^= r0;   \
     r4 = r1;   \
     r1 &= r3;   \
@@ -73,10 +73,10 @@
     r3 |= r0;   \
     r1 ^= r3;   \
     r4 ^= r3;   \
-            }
+	    }
 
 #define I0(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r2 = ~r2;      \
     r4 = r1;   \
     r1 |= r0;   \
@@ -96,10 +96,10 @@
     r3 ^= r1;   \
     r2 &= r3;   \
     r4 ^= r2;   \
-            }
+	    }
 
 #define S1(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r0 = ~r0;      \
     r2 = ~r2;      \
     r4 = r0;   \
@@ -118,10 +118,10 @@
     r1 ^= r0;   \
     r0 &= r2;   \
     r0 ^= r4;   \
-            }
+	    }
 
 #define I1(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r1;   \
     r1 ^= r3;   \
     r3 &= r1;   \
@@ -141,10 +141,10 @@
     r1 ^= r0;   \
     r1 |= r4;   \
     r3 ^= r1;   \
-            }
+	    }
 
 #define S2(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r0;   \
     r0 &= r2;   \
     r0 ^= r3;   \
@@ -161,10 +161,10 @@
     r1 ^= r3;   \
     r1 ^= r4;   \
     r4 = ~r4;      \
-            }
+	    }
 
 #define I2(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r2 ^= r3;   \
     r3 ^= r0;   \
     r4 = r3;   \
@@ -184,10 +184,10 @@
     r0 &= r1;   \
     r3 ^= r4;   \
     r3 ^= r0;   \
-            }
+	    }
 
 #define S3(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r0;   \
     r0 |= r3;   \
     r3 ^= r1;   \
@@ -207,10 +207,10 @@
     r2 = r1;   \
     r1 |= r3;   \
     r1 ^= r0;   \
-            }
+	    }
 
 #define I3(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r2;   \
     r2 ^= r1;   \
     r1 &= r2;   \
@@ -229,10 +229,10 @@
     r1 ^= r2;   \
     r4 ^= r0;   \
     r2 ^= r4;   \
-            }
+	    }
 
 #define S4(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r1 ^= r3;   \
     r3 = ~r3;      \
     r2 ^= r3;   \
@@ -253,10 +253,10 @@
     r2 &= r3;   \
     r0 = ~r0;      \
     r4 ^= r2;   \
-            }
+	    }
 
 #define I4(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r2;   \
     r2 &= r3;   \
     r2 ^= r1;   \
@@ -277,10 +277,10 @@
     r2 |= r3;   \
     r3 ^= r0;   \
     r2 ^= r1;   \
-            }
+	    }
 
 #define S5(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r0 ^= r1;   \
     r1 ^= r3;   \
     r3 = ~r3;      \
@@ -300,10 +300,10 @@
     r0 ^= r4;   \
     r4 |= r3;   \
     r2 ^= r4;   \
-            }
+	    }
 
 #define I5(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r1 = ~r1;      \
     r4 = r3;   \
     r2 ^= r1;   \
@@ -323,10 +323,10 @@
     r3 ^= r0;   \
     r3 ^= r4;   \
     r4 = ~r4;      \
-            }
+	    }
 
 #define S6(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r2 = ~r2;      \
     r4 = r3;   \
     r3 &= r0;   \
@@ -345,10 +345,10 @@
     r3 = ~r3;      \
     r2 &= r4;   \
     r2 ^= r3;   \
-            }
+	    }
 
 #define I6(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r0 ^= r2;   \
     r4 = r2;   \
     r2 &= r0;   \
@@ -366,10 +366,10 @@
     r0 |= r2;   \
     r3 ^= r1;   \
     r4 ^= r0;   \
-            }
+	    }
 
 #define S7(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r2;   \
     r2 &= r1;   \
     r2 ^= r3;   \
@@ -390,10 +390,10 @@
     r4 &= r0;   \
     r1 ^= r3;   \
     r4 ^= r1;   \
-            }
+	    }
 
 #define I7(i, r0, r1, r2, r3, r4) \
-       {           \
+       {	   \
     r4 = r2;   \
     r2 ^= r0;   \
     r0 &= r3;   \
@@ -413,14 +413,14 @@
     r4 |= r0;   \
     r3 ^= r2;   \
     r4 ^= r2;   \
-            }
+	    }
 
 // key xor
 #define KX(r, a, b, c, d, e)    {\
-        a ^= subkey[4 * r + 0]; \
-        b ^= subkey[4 * r + 1]; \
-        c ^= subkey[4 * r + 2]; \
-        d ^= subkey[4 * r + 3];}
+	a ^= subkey[4 * r + 0]; \
+	b ^= subkey[4 * r + 1]; \
+	c ^= subkey[4 * r + 2]; \
+	d ^= subkey[4 * r + 3];}
 
 /**	Decrypt a single block on the device.
  */
@@ -443,270 +443,22 @@ __global__ void serpent_cuda_encrypt_blocks(block128_t* cuda_blocks);
 
 
 /**	Flip the bytes of the specified 32-bit unsigned integer.
+ *	NOTE: Tried to make a global function for this but got
+ *	"Error: External calls are not supported...".
  *	@return	A 32-bit unsigned integer with the bytes mirrored.
  */
-__device__ uint32_t mirror_bytes32_cu(uint32_t x);
+__device__ uint32_t serpent_mirror_bytes32(uint32_t x);
 
 
 // Constant variables must be declared with a static scope...
+// Some variables are prefixed with the file name because of
+// "duplicate global variable looked up by string name" errors.
 // Array to hold the expanded serpent key.
 __device__ __constant__ uint32_t cuda_subkey[SUBKEY_LENGTH];
 // The total number of blocks being decrypted by a single CUDA thread.
-__device__ __constant__ int blocks_per_thread;
+__device__ __constant__ int serpent_blocks_per_thread;
 // The total number of blocks being decrypted in the entire CUDA kernel.
-__device__ __constant__ int blocks_per_kernel;
-
-
-__device__ void serpent_cuda_decrypt_block(block128_t* block, uint32_t* subkey) {
-	uint32_t a, b, c, d, e;
-	int j;
-
-	// Change to little endian.
-        a = mirror_bytes32_cu(block->x0);
-        b = mirror_bytes32_cu(block->x1);
-        c = mirror_bytes32_cu(block->x2);
-        d = mirror_bytes32_cu(block->x3);
-
-	// Decrypt the current block.
-	j = 4;
-	subkey += 96;
-	beforeI7(KX);
-	goto start;
-	do
-	{
-		c = b;
-		b = d;
-		d = e;
-		subkey -= 32;
-		beforeI7(inverse_linear_transformation);
-	start:
-		beforeI7(I7); afterI7(KX);
-		afterI7(inverse_linear_transformation); afterI7(I6); afterI6(KX);
-		afterI6(inverse_linear_transformation); afterI6(I5); afterI5(KX);
-		afterI5(inverse_linear_transformation); afterI5(I4); afterI4(KX);
-		afterI4(inverse_linear_transformation); afterI4(I3); afterI3(KX);
-		afterI3(inverse_linear_transformation); afterI3(I2); afterI2(KX);
-		afterI2(inverse_linear_transformation); afterI2(I1); afterI1(KX);
-		afterI1(inverse_linear_transformation); afterI1(I0); afterI0(KX);
-	}
-	while (--j != 0);
-
-	// Restore to big endian based on algorithm-defined order.
-	block->x0 = mirror_bytes32_cu(a);
-	block->x1 = mirror_bytes32_cu(d);
-	block->x2 = mirror_bytes32_cu(b);
-	block->x3 = mirror_bytes32_cu(e);
-}
-
-
-__global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
-	int index = (blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x;
-	int i;
-
-	// Decrypt the minimal number of blocks.
-	for ( i = 0; i < blocks_per_thread; i++ ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
-
-		index += blockDim.x;
-	}
-
-	// Decrypt the extra blocks that fall outside the minimal number of blocks.
-	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
-	if ( index < blocks_per_kernel ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
-	}
-}
-
-/*
-__global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
-	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
-	int i;
-
-	// Encrypted the minimal number of blocks.
-	for ( i = 0; i < blocks_per_thread; i++ ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index + i]), cuda_subkey);
-	}
-
-	// Encrypt the extra blocks that fall outside the minimal number of block.s
-	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
-	if ( index < blocks_per_kernel ) {
-		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
-	}
-}
-*/
-
-__device__ void serpent_cuda_encrypt_block(block128_t* block, uint32_t* subkey) {
-	uint32_t a, b, c, d, e;
-	int j;
-
-	// Change to little endian.
-	a = mirror_bytes32_cu(block->x0);
-	b = mirror_bytes32_cu(block->x1);
-	c = mirror_bytes32_cu(block->x2);
-	d = mirror_bytes32_cu(block->x3);
-
-	// Encrypt the current block.
-	j = 1;
-	do {
-		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
-		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
-		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
-		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
-		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
-		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
-		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
-		afterS6(KX); afterS6(S7);
-
-		if (j == 4)
-			break;
-
-		++j;
-		c = b;
-		b = e;
-		e = d;
-		d = a;
-		a = e;
-		subkey += 32;
-		beforeS0(linear_transformation);
-	} while (1);
-	afterS7(KX);
-
-	// Restore to big endian based on algorithm-defined order.
-	block->x0 = mirror_bytes32_cu(d);
-	block->x1 = mirror_bytes32_cu(e);
-	block->x2 = mirror_bytes32_cu(b);
-	block->x3 = mirror_bytes32_cu(a);
-}
-
-
-__global__ void serpent_cuda_encrypt_blocks( block128_t* cuda_blocks ) {
-        int index = (blockIdx.x * (blockDim.x * blocks_per_thread)) + threadIdx.x;
-        int i;
-
-        // Encrypt the minimal number of blocks.
-        for ( i = 0; i < blocks_per_thread; i++ ) {
-                // Encrypt the block.
-                serpent_cuda_encrypt_block(&(cuda_blocks[index]), cuda_subkey);
-
-                // Increment the index.
-                index += blockDim.x;
-        }
-
-        // Encrypt the extra blocks that fall outside the minimal number of block.s
-        index = (gridDim.x * (blockDim.x * blocks_per_thread)) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
-        if ( index < blocks_per_kernel ) {
-                serpent_cuda_encrypt_block(&(cuda_blocks[index]), cuda_subkey);
-        }
-}
-
-/* A better attempt at stronger global memory coalescing. Still did not turn out well.
-#define UINT32_PER_BLOCK128 4
-
-__device__ void serpent_cuda_encrypt_block(uint32_t* shared_blocks, int shared_index, uint32_t* subkey);
-__global__ void serpent_cuda_encrypt_blocks(uint32_t* cuda_blocks);
-
-__global__ void serpent_cuda_encrypt_blocks( uint32_t* cuda_blocks ) {
-	int threads_per_multiprocessor = blockDim.x;
-        int cache_index = (blockIdx.x * (UINT32_PER_BLOCK128 * threads_per_multiprocessor * blocks_per_thread));
-        int i;
-
-        // Encrypt the minimal number of blocks.
-        for ( i = 0; i < blocks_per_thread; i++ ) {
-                // Encrypt the blocks at the cache index
-                serpent_cuda_encrypt_block(&(cuda_blocks[cache_index]), cuda_subkey, threads_per_multiprocessor);
-
-		// Adjust cache index value.
-		cache_index += (threads_per_multiprocessor * UINT32_PER_BLOCK128);
-	}
-
-	// Encrypt the extra blocks that fall outside the minimal number of block.
-	// NOTE: DOES NOT WORK and is incomplete.
-	//cache_index = (gridDim.x * (threads_per_multiprocessor * blocks_per_thread)) + (blockIdx.x * threads_per_multiprocessor); // (end of array + multiprocessor block).
-	//if ( cache_index > blocks_per_kernel) {
-	//	return;
-	//}
-	//else if ( (cache_index + threads_per_multiprocessor) > blocks_per_kernel ) {
-	//	if ( threadIdx.x + cache_index > blocks_per_kernel ) {
-	//		return;
-	//	}
-	//	threads_per_multiprocessor = (blocks_per_kernel - cache_index);
-	//}
-}
-__device__ void serpent_cuda_encrypt_block(uint32_t* global_blocks, uint32_t* subkey, int threads_per_multiprocessor) {
-	// Array that allows collaborative loading of blocks into shared memory.
-	extern __shared__ uint32_t shared_blocks[];
-	uint32_t a, b, c, d, e;
-	int index = threadIdx.x;
-	int j;
-
-	// Collaboratively load blocks into shared memory.
-	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
-	index += threads_per_multiprocessor;
-	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
-	index += threads_per_multiprocessor;
-	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
-	index += threads_per_multiprocessor;
-	shared_blocks[index] = mirror_bytes32_cu(global_blocks[index]);
-	index -= (threads_per_multiprocessor * 3);
-	__syncthreads();
-
-	// Read from shared memory.
-	index *= UINT32_PER_BLOCK128;
-	a = shared_blocks[index];
-	b = shared_blocks[index+1];
-	c = shared_blocks[index+2];
-	d = shared_blocks[index+3];
-
-	// Encrypt the current block.
-	j = 1;
-	do {
-		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
-		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
-		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
-		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
-		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
-		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
-		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
-		afterS6(KX); afterS6(S7);
-
-		if (j == 4)
-			break;
-
-		++j;
-		c = b;
-		b = e;
-		e = d;
-		d = a;
-		a = e;
-		subkey += 32;
-		beforeS0(linear_transformation);
-	} while (1);
-	afterS7(KX);
-
-	// Write blocks back to global memory.
-	global_blocks[index] = mirror_bytes32_cu(d);
-	global_blocks[index+1] = mirror_bytes32_cu(e);
-	global_blocks[index+2] = mirror_bytes32_cu(b);
-	global_blocks[index+3] = mirror_bytes32_cu(a);
-	__syncthreads();
-}
-
-serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count, (sizeof(block128_t) * thread_count)>>>((uint32_t*)cuda_blocks);
-
- */
-
-__device__ uint32_t mirror_bytes32_cu(uint32_t x) {
-	uint32_t out;
-
-	// Change to Little Endian.
-	out = (uint8_t) x;
-       	out <<= 8; out |= (uint8_t) (x >> 8);
-	out <<= 8; out |= (uint8_t) (x >> 16);
-	out = (out << 8) | (uint8_t) (x >> 24);
-
-	// Return out.
-	return out;
-}
+__device__ __constant__ int serpent_blocks_per_kernel;
 
 
 extern "C"
@@ -780,6 +532,258 @@ inline int serpent_cuda_allocate_buffer(size_t free_global_memory, size_t total_
 
 	// Return success.
 	return 0;
+}
+
+
+__device__ void serpent_cuda_decrypt_block(block128_t* block, uint32_t* subkey) {
+	uint32_t a, b, c, d, e;
+	int j;
+
+	// Change to little endian.
+	a = serpent_mirror_bytes32(block->x0);
+	b = serpent_mirror_bytes32(block->x1);
+	c = serpent_mirror_bytes32(block->x2);
+	d = serpent_mirror_bytes32(block->x3);
+
+	// Decrypt the current block.
+	j = 4;
+	subkey += 96;
+	beforeI7(KX);
+	goto start;
+	do
+	{
+		c = b;
+		b = d;
+		d = e;
+		subkey -= 32;
+		beforeI7(inverse_linear_transformation);
+	start:
+		beforeI7(I7); afterI7(KX);
+		afterI7(inverse_linear_transformation); afterI7(I6); afterI6(KX);
+		afterI6(inverse_linear_transformation); afterI6(I5); afterI5(KX);
+		afterI5(inverse_linear_transformation); afterI5(I4); afterI4(KX);
+		afterI4(inverse_linear_transformation); afterI4(I3); afterI3(KX);
+		afterI3(inverse_linear_transformation); afterI3(I2); afterI2(KX);
+		afterI2(inverse_linear_transformation); afterI2(I1); afterI1(KX);
+		afterI1(inverse_linear_transformation); afterI1(I0); afterI0(KX);
+	}
+	while (--j != 0);
+
+	// Restore to big endian based on algorithm-defined order.
+	block->x0 = serpent_mirror_bytes32(a);
+	block->x1 = serpent_mirror_bytes32(d);
+	block->x2 = serpent_mirror_bytes32(b);
+	block->x3 = serpent_mirror_bytes32(e);
+}
+
+
+__global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
+	int index = (blockIdx.x * (blockDim.x * serpent_blocks_per_thread)) + threadIdx.x;
+	int i;
+
+	// Decrypt the minimal number of blocks.
+	for ( i = 0; i < serpent_blocks_per_thread; i++ ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
+
+		index += blockDim.x;
+	}
+
+	// Decrypt the extra blocks that fall outside the minimal number of blocks.
+	index = ( gridDim.x * blockDim.x * serpent_blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
+	if ( index < serpent_blocks_per_kernel ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
+	}
+}
+
+/*
+__global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks) {
+	int index = (blockIdx.x * blockDim.x * blocks_per_thread) + (threadIdx.x * blocks_per_thread); // (beginning of multiprocessor segment) + (segment index).
+	int i;
+
+	// Encrypted the minimal number of blocks.
+	for ( i = 0; i < blocks_per_thread; i++ ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index + i]), cuda_subkey);
+	}
+
+	// Encrypt the extra blocks that fall outside the minimal number of block.s
+	index = ( gridDim.x * blockDim.x * blocks_per_thread ) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
+	if ( index < blocks_per_kernel ) {
+		serpent_cuda_decrypt_block(&(cuda_blocks[index]), cuda_subkey);
+	}
+}
+*/
+
+__device__ void serpent_cuda_encrypt_block(block128_t* block, uint32_t* subkey) {
+	uint32_t a, b, c, d, e;
+	int j;
+
+	// Change to little endian.
+	a = serpent_mirror_bytes32(block->x0);
+	b = serpent_mirror_bytes32(block->x1);
+	c = serpent_mirror_bytes32(block->x2);
+	d = serpent_mirror_bytes32(block->x3);
+
+	// Encrypt the current block.
+	j = 1;
+	do {
+		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
+		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
+		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
+		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
+		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
+		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
+		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
+		afterS6(KX); afterS6(S7);
+
+		if (j == 4)
+			break;
+
+		++j;
+		c = b;
+		b = e;
+		e = d;
+		d = a;
+		a = e;
+		subkey += 32;
+		beforeS0(linear_transformation);
+	} while (1);
+	afterS7(KX);
+
+	// Restore to big endian based on algorithm-defined order.
+	block->x0 = serpent_mirror_bytes32(d);
+	block->x1 = serpent_mirror_bytes32(e);
+	block->x2 = serpent_mirror_bytes32(b);
+	block->x3 = serpent_mirror_bytes32(a);
+}
+
+
+__global__ void serpent_cuda_encrypt_blocks( block128_t* cuda_blocks ) {
+	int index = (blockIdx.x * (blockDim.x * serpent_blocks_per_thread)) + threadIdx.x;
+	int i;
+
+	// Encrypt the minimal number of blocks.
+	for ( i = 0; i < serpent_blocks_per_thread; i++ ) {
+		// Encrypt the block.
+		serpent_cuda_encrypt_block(&(cuda_blocks[index]), cuda_subkey);
+
+		// Increment the index.
+		index += blockDim.x;
+	}
+
+	// Encrypt the extra blocks that fall outside the minimal number of block.s
+	index = (gridDim.x * (blockDim.x * serpent_blocks_per_thread)) + ((blockIdx.x * blockDim.x) + threadIdx.x); // (end of array) + (absolute thread #).
+	if ( index < serpent_blocks_per_kernel ) {
+		serpent_cuda_encrypt_block(&(cuda_blocks[index]), cuda_subkey);
+	}
+}
+
+/* A better attempt at stronger global memory coalescing. Still did not turn out well.
+#define UINT32_PER_BLOCK128 4
+
+__device__ void serpent_cuda_encrypt_block(uint32_t* shared_blocks, int shared_index, uint32_t* subkey);
+__global__ void serpent_cuda_encrypt_blocks(uint32_t* cuda_blocks);
+
+__global__ void serpent_cuda_encrypt_blocks( uint32_t* cuda_blocks ) {
+	int threads_per_multiprocessor = blockDim.x;
+	int cache_index = (blockIdx.x * (UINT32_PER_BLOCK128 * threads_per_multiprocessor * blocks_per_thread));
+	int i;
+
+	// Encrypt the minimal number of blocks.
+	for ( i = 0; i < blocks_per_thread; i++ ) {
+		// Encrypt the blocks at the cache index
+		serpent_cuda_encrypt_block(&(cuda_blocks[cache_index]), cuda_subkey, threads_per_multiprocessor);
+
+		// Adjust cache index value.
+		cache_index += (threads_per_multiprocessor * UINT32_PER_BLOCK128);
+	}
+
+	// Encrypt the extra blocks that fall outside the minimal number of block.
+	// NOTE: DOES NOT WORK and is incomplete.
+	//cache_index = (gridDim.x * (threads_per_multiprocessor * blocks_per_thread)) + (blockIdx.x * threads_per_multiprocessor); // (end of array + multiprocessor block).
+	//if ( cache_index > blocks_per_kernel) {
+	//	return;
+	//}
+	//else if ( (cache_index + threads_per_multiprocessor) > blocks_per_kernel ) {
+	//	if ( threadIdx.x + cache_index > blocks_per_kernel ) {
+	//		return;
+	//	}
+	//	threads_per_multiprocessor = (blocks_per_kernel - cache_index);
+	//}
+}
+__device__ void serpent_cuda_encrypt_block(uint32_t* global_blocks, uint32_t* subkey, int threads_per_multiprocessor) {
+	// Array that allows collaborative loading of blocks into shared memory.
+	extern __shared__ uint32_t shared_blocks[];
+	uint32_t a, b, c, d, e;
+	int index = threadIdx.x;
+	int j;
+
+	// Collaboratively load blocks into shared memory.
+	shared_blocks[index] = serpent_mirror_bytes32(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = serpent_mirror_bytes32(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = serpent_mirror_bytes32(global_blocks[index]);
+	index += threads_per_multiprocessor;
+	shared_blocks[index] = serpent_mirror_bytes32(global_blocks[index]);
+	index -= (threads_per_multiprocessor * 3);
+	__syncthreads();
+
+	// Read from shared memory.
+	index *= UINT32_PER_BLOCK128;
+	a = shared_blocks[index];
+	b = shared_blocks[index+1];
+	c = shared_blocks[index+2];
+	d = shared_blocks[index+3];
+
+	// Encrypt the current block.
+	j = 1;
+	do {
+		beforeS0(KX); beforeS0(S0); afterS0(linear_transformation);
+		afterS0(KX); afterS0(S1); afterS1(linear_transformation);
+		afterS1(KX); afterS1(S2); afterS2(linear_transformation);
+		afterS2(KX); afterS2(S3); afterS3(linear_transformation);
+		afterS3(KX); afterS3(S4); afterS4(linear_transformation);
+		afterS4(KX); afterS4(S5); afterS5(linear_transformation);
+		afterS5(KX); afterS5(S6); afterS6(linear_transformation);
+		afterS6(KX); afterS6(S7);
+
+		if (j == 4)
+			break;
+
+		++j;
+		c = b;
+		b = e;
+		e = d;
+		d = a;
+		a = e;
+		subkey += 32;
+		beforeS0(linear_transformation);
+	} while (1);
+	afterS7(KX);
+
+	// Write blocks back to global memory.
+	global_blocks[index] = serpent_mirror_bytes32(d);
+	global_blocks[index+1] = serpent_mirror_bytes32(e);
+	global_blocks[index+2] = serpent_mirror_bytes32(b);
+	global_blocks[index+3] = serpent_mirror_bytes32(a);
+	__syncthreads();
+}
+
+serpent_cuda_encrypt_blocks<<<multiprocessor_count, thread_count, (sizeof(block128_t) * thread_count)>>>((uint32_t*)cuda_blocks);
+
+ */
+
+__device__ uint32_t serpent_mirror_bytes32(uint32_t x) {
+	uint32_t out;
+
+	// Change to Little Endian.
+	out = (uint8_t) x;
+       	out <<= 8; out |= (uint8_t) (x >> 8);
+	out <<= 8; out |= (uint8_t) (x >> 16);
+	out = (out << 8) | (uint8_t) (x >> 24);
+
+	// Return out.
+	return out;
 }
 
 
@@ -880,14 +884,14 @@ int serpent_cuda_decrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 			}
 
 			// Copy blocks per thread to constant memory.
-			cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+			cuda_error = cudaMemcpyToSymbol( "serpent_blocks_per_thread", &blocks_per_thread, sizeof(int));
 			if ( cuda_error != cudaSuccess ) {
 				fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
 				return -1;
 			}
 
 			// Copy blocks per kernel to constant memory.
-			cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
+			cuda_error = cudaMemcpyToSymbol( "serpent_blocks_per_kernel", &blocks_per_kernel, sizeof(int));
 			if ( cuda_error != cudaSuccess ) {
 				fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
 				return -1;
@@ -1044,14 +1048,14 @@ int serpent_cuda_encrypt_cu(uint32_t* subkey, block128_t* blocks, int block_coun
 			}
 
 			// Copy blocks per thread to constant memory.
-			cuda_error = cudaMemcpyToSymbol( "blocks_per_thread", &blocks_per_thread, sizeof(int));
+			cuda_error = cudaMemcpyToSymbol( "serpent_blocks_per_thread", &blocks_per_thread, sizeof(int));
 			if ( cuda_error != cudaSuccess ) {
 				fprintf(stderr, "Unable to copy blocks_per_thread to constant memory: %s.\n", cudaGetErrorString(cuda_error));
 				return -1;
 			}
 
 			// Copy blocks per kernel to constant memory.
-			cuda_error = cudaMemcpyToSymbol( "blocks_per_kernel", &blocks_per_kernel, sizeof(int));
+			cuda_error = cudaMemcpyToSymbol( "serpent_blocks_per_kernel", &blocks_per_kernel, sizeof(int));
 			if ( cuda_error != cudaSuccess ) {
 				fprintf(stderr, "Unable to copy blocks_per_kernel to constant memory: %s.\n", cudaGetErrorString(cuda_error));
 				return -1;

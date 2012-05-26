@@ -719,9 +719,6 @@ exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, in
 	char* function_name = "serpent_parallel_encrypt()";
 	exception_t* exception;
 	uint32_t* subkey;
-	int blocks_per_thread;
-	int thread_count;
-	int thread_index;
 
 	// Validate parameters.
 	#ifdef DEBUG_SERPENT
@@ -740,24 +737,26 @@ exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, in
 	}
 
 	// Encrypt each block.
-	#pragma omp parallel shared(blocks, subkey, block_count, thread_count, thread_index, blocks_per_thread)
+	#pragma omp parallel shared(blocks, subkey, block_count)
 	{
+		int blocks_per_thread;
+		int thread_count;
+		int index;
+		int i;
+
 		#if defined (_OPENMP)
 			thread_count = omp_get_num_threads();
-			thread_index = omp_get_thread_num();
+			index = omp_get_thread_num();
 		#endif
 
-		// Calculate the current index.
-		int index = thread_index;
-		
 		// Encrypted the minimal number of blocks.
 		blocks_per_thread = block_count / thread_count;
-		for ( int i = 0; i < blocks_per_thread; i++ ) {
+		for ( i = 0; i < blocks_per_thread; i++ ) {
 			serpent_encrypt_block(&(blocks[index]), subkey);
 			index += thread_count;
 		}
 
-		// Encrypt the extra blocks that fall outside the minimal number of block.s
+		// Encrypt the extra blocks that fall outside the minimal number of blocks.
 		if ( index < block_count ) {
 			serpent_encrypt_block(&(blocks[index]), subkey);
 		}
@@ -769,7 +768,7 @@ exception_t* serpent_parallel_encrypt(key256_t* user_key, block128_t* blocks, in
 		return exception_append(exception, function_name);
 	}
 
-	// Return. 
+	// Return success.
 	return NULL;
 }
 

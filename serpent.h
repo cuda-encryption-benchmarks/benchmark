@@ -30,6 +30,7 @@
 #define rotl_fixed(x, n)   (((x) << (n)) | ((x) >> (32 - (n))))
 // Rotate the bits in the specified number x right by the specified number n.
 #define rotr_fixed(x, n)   (((x) >> (n)) | ((x) << (32 - (n))))
+
 // Percentage of global memory to subtract per iteration when trying to allocate
 // a memory buffer for blocks in CUDA.
 #define SERPENT_CUDA_MEMORY_MULTIPLIER 0.001
