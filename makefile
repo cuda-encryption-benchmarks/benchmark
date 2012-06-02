@@ -8,6 +8,7 @@ cfiles =	main \
 		aes \
 		algorithm \
 		benchmark \
+		benchmark_data \
 		block128 \
 		encryption \
 		file \

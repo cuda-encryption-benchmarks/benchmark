@@ -22,7 +22,7 @@
  *	@out	benchmark_data: The data from running the algorithm.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algorithm, enum mode mode, enum encryption encryption, benchmark_data_t* benchmark_data );
+exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algorithm, enum mode mode, enum encryption encryption, benchmark_run_t* benchmark_run );
 
 
 #endif //benchmark_H

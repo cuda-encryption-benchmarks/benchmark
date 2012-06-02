@@ -119,8 +119,8 @@ exception_t* section_free(section_t* section) {
 }
 
 
-exception_t* section_write(section_t* section, FILE* file) {
-	char* function_name = "section_write()";
+exception_t* section_write_appendix(section_t* section, FILE* file) {
+	char* function_name = "section_write_appendix()";
 	char algorithm_name[50];
 	exception_t* exception;
 	int i;
@@ -145,7 +145,7 @@ exception_t* section_write(section_t* section, FILE* file) {
 
 	// Write subsection data.
 	for ( i = 0; i < SECTION_SUBSECTION_COUNT; i++ ) {
-		exception = subsection_write(&(section->subsections[i]), file, section->algorithm);
+		exception = subsection_write_appendix(&(section->subsections[i]), file, section->algorithm);
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
@@ -156,3 +156,96 @@ exception_t* section_write(section_t* section, FILE* file) {
 	return NULL;
 }
 
+
+exception_t* section_write_results(section_t* section, FILE* file) {
+	char* function_name = "section_write_results()";
+	exception_t* exception;
+	char algorithm_name[ALGORITHM_NAME_LENGTH];
+
+	// Validate parameters.
+	#ifdef DEBUG_SECTION
+	if ( section == NULL ) {
+		return exception_throw("section was NULL.", function_name);
+	}
+	else if ( file == NULL ) {
+		return exception_throw("file was NULL.", function_name);
+	}
+	#endif
+
+	// Get the algorithm name.
+	exception = algorithm_get_name(section->algorithm, algorithm_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Write the header for this section.
+	fprintf(file, "\\subsection{%s}\n", algorithm_name);
+
+	// Write the encryption results.
+	exception = section_write_results_table(section, file, ENCRYPT);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Write the decryption results.
+	exception = section_write_results_table(section, file, DECRYPT);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* section_write_results_table(section_t* section, FILE* file, enum encryption encryption) {
+	char* function_name = "section_write_results_table()";
+	exception_t* exception;
+	char algorithm_name[ALGORITHM_NAME_LENGTH];
+        char encryption_name[ENCRYPTION_NAME_LENGTH];
+	int i;
+
+	// Validate parameters
+	#ifdef DEBUG_SECTION
+	if ( section == NULL ) {
+		return exception_throw("section was NULL.", function_name);
+	}
+	#endif
+
+	// Get the algorithm name.
+	exception = algorithm_get_name(section->algorithm, algorithm_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Get the encryption name.
+	exception = encryption_get_name(encryption, encryption_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Print the table head.
+        fprintf(file, "\\begin{figure}[H]\n \
+                \\caption{%s %s data}\n\\centering\n", algorithm_name, encryption_name);
+
+        // Print tabular head.
+        fprintf(file, "\\begin{tabular}[c]{r|c|c|c}\n");
+
+        // Print row headers.
+        fprintf(file, "Mode & $\\overline{x}$ & $H$ & $s$ \\\\\n\\hline\n");
+
+        // Print each row of data.
+	for ( i = 0; i < SECTION_SUBSECTION_COUNT; i++ ) {
+		exception = subsection_write_results_table_row(&(section->subsections[i]), file, encryption);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+        // Print tabular and table tails.
+        fprintf(file, "\\hline\n" \
+		"\\end{tabular}\n\\end{figure}\n");
+
+	// Return success.
+	return NULL;
+}

@@ -3,15 +3,26 @@
 #define statistics_H
 
 
+#ifdef DEBUG
+#define DEBUG_STATISTICS
+#endif
+
+
 #include <math.h>
 
 #include "ccc/ccc.h"
 
 
-/**	Takes an array of doubles and returns the mean.
- *	@out	mean: The mean of the specified values.
+/**	Takes an array of doubles and returns the harmonic mean.
+ *	@out	mean: The harmonic mean of the specified values.
  */
-exception_t* statistics_mean_double(double* values, int value_count, double* mean);
+exception_t* statistics_mean_harmonic_double(double* values, int value_count, double* mean);
+
+
+/**	Takes an array of doubles and returns the sample mean.
+ *	@out	mean: The sample mean of the specified values.
+ */
+exception_t* statistics_mean_sample_double(double* values, int value_count, double* mean);
 
 
 /**	Takes an array of doubles and returns the standard deviation as a double.

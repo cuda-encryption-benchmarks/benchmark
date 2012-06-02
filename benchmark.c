@@ -1,7 +1,7 @@
 #include "benchmark.h"
 
 
-exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algorithm, enum mode mode, enum encryption encryption, benchmark_data_t* benchmark_data ) {
+exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algorithm, enum mode mode, enum encryption encryption, benchmark_run_t* benchmark_run ) {
 	char* function_name = "benchmark()";
 	exception_t* exception;
 	block128_t* blocks;
@@ -19,8 +19,8 @@ exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algor
 	if ( input_filepath == NULL ) {
 		return exception_throw("input_filepath was NULL.", function_name);
 	}
-	if ( benchmark_data == NULL ) {
-		return exception_throw("benchmark_data was NULL.", function_name);
+	if ( benchmark_run == NULL ) {
+		return exception_throw("benchmark_run was NULL.", function_name);
 	}
 
 	// Open input file.
@@ -115,9 +115,9 @@ exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algor
 	}
 
 	// Assign output parameters.
-	benchmark_data->time_elapsed.tv_sec = clock_elapsed.tv_sec;
-	benchmark_data->time_elapsed.tv_nsec = clock_elapsed.tv_nsec;
-	benchmark_data->buffer_size = buffer_size;
+	benchmark_run->time_elapsed.tv_sec = clock_elapsed.tv_sec;
+	benchmark_run->time_elapsed.tv_nsec = clock_elapsed.tv_nsec;
+	benchmark_run->buffer_size = buffer_size;
 
 	// Return success.
 	return NULL;

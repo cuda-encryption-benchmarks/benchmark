@@ -31,13 +31,13 @@ exception_t* subsection_execute(subsection_t* subsection, key256_t* key, char* i
 		fprintf(stdout, "      Iteration #%i: ", i + 1);
 		fflush(stdout);
 		// Encrypt the file.
-		exception = benchmark(key, input_filepath, algorithm, subsection->mode, ENCRYPT, &(subsection->data_encrypt[i]));
+		exception = benchmark(key, input_filepath, algorithm, subsection->mode, ENCRYPT, &(subsection->data_encrypt.runs[i]));
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
 
 		// Decrypt the file.
-		exception = benchmark(key, input_filepath, algorithm, subsection->mode, DECRYPT, &(subsection->data_decrypt[i]));
+		exception = benchmark(key, input_filepath, algorithm, subsection->mode, DECRYPT, &(subsection->data_decrypt.runs[i]));
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
@@ -55,7 +55,7 @@ exception_t* subsection_execute(subsection_t* subsection, key256_t* key, char* i
 
 exception_t* subsection_init(subsection_t* subsection, int data_count, enum mode mode) {
 	char* function_name = "subsection_init()";
-	int i;
+	exception_t* exception;
 
 	// Validate parameters.
 	if ( subsection == NULL ) {
@@ -71,26 +71,16 @@ exception_t* subsection_init(subsection_t* subsection, int data_count, enum mode
 	// Set the data count.
 	subsection->data_count = data_count;
 
-	// Allocate space for encryption data.
-	subsection->data_encrypt = (benchmark_data_t*)malloc(sizeof(benchmark_data_t) * data_count);
-	if ( subsection->data_encrypt == NULL ) {
-		return exception_throw("Unable to allocate encryption data.", function_name);
+	// Initialize the encryption data.
+	exception = benchmark_data_init(&(subsection->data_encrypt), data_count);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
 	}
 
-	// Allocate space for decryption data.
-	subsection->data_decrypt = (benchmark_data_t*)malloc(sizeof(benchmark_data_t) * data_count);
-	if ( subsection->data_decrypt == NULL ) {
-		return exception_throw("Unable to allocate decryption data.", function_name);
-	}
-
-	// Initialize the data to have impossible values.
-	for ( i = 0; i < data_count; i++ ) {
-		subsection->data_encrypt[i].time_elapsed.tv_sec = -1;
-		subsection->data_encrypt[i].time_elapsed.tv_nsec = -1;
-		subsection->data_encrypt[i].buffer_size = -1;
-		subsection->data_decrypt[i].time_elapsed.tv_sec = -1;
-		subsection->data_decrypt[i].time_elapsed.tv_nsec = -1;
-		subsection->data_decrypt[i].buffer_size = -1;
+	// Initialize the decryption data.
+	exception = benchmark_data_init(&(subsection->data_decrypt), data_count);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
 	}
 
 	// Return success.
@@ -100,7 +90,7 @@ exception_t* subsection_init(subsection_t* subsection, int data_count, enum mode
 
 exception_t* subsection_free(subsection_t* subsection) {
 	char* function_name = "subsection_free()";
-	int i;
+	exception_t* exception;
 
 	// Validate parameters.
 	if ( subsection == NULL ) {
@@ -110,31 +100,25 @@ exception_t* subsection_free(subsection_t* subsection) {
 	// Set mode to an impossible value.
 	subsection->mode = -1;
 
-	// Set the data to impossible values.
-	for ( i = 0; i < subsection->data_count; i++ ) {
-		subsection->data_encrypt[i].time_elapsed.tv_sec = -1;
-		subsection->data_encrypt[i].time_elapsed.tv_nsec = -1;
-		subsection->data_encrypt[i].buffer_size = -1;
-		subsection->data_decrypt[i].time_elapsed.tv_sec = -1;
-		subsection->data_decrypt[i].time_elapsed.tv_nsec = -1;
-		subsection->data_decrypt[i].buffer_size = -1;
+	// Free the encryption data.
+	exception = benchmark_data_free(&(subsection->data_encrypt));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
 	}
 
-	// Free the encryption data.
-	free(subsection->data_encrypt);
-	subsection->data_encrypt = NULL;
-
 	// Free the decryption data.
-	free(subsection->data_decrypt);
-	subsection->data_decrypt = NULL;
+	exception = benchmark_data_free(&(subsection->data_decrypt));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
 
 	// Return success.
 	return NULL;
 }
 
 
-exception_t* subsection_write(subsection_t* subsection, FILE* file, enum algorithm algorithm) {
-	char* function_name = "subsection_write()";
+exception_t* subsection_write_appendix(subsection_t* subsection, FILE* file, enum algorithm algorithm) {
+	char* function_name = "subsection_write_appendix()";
 	char mode_name[MODE_NAME_LENGTH];
 	exception_t* exception;
 
@@ -155,7 +139,7 @@ exception_t* subsection_write(subsection_t* subsection, FILE* file, enum algorit
 
 	// Write CSV output.
 	fprintf(stdout, "      Writing CSV data: ");
-	exception = subsection_write_csv(subsection, algorithm);
+	exception = subsection_write_appendix_csv(subsection, algorithm);
 	if ( exception != NULL ) {
 		fprintf(stdout, "FAILED: %s", exception->message);
 	}
@@ -163,7 +147,7 @@ exception_t* subsection_write(subsection_t* subsection, FILE* file, enum algorit
 
 	// Write LaTeX output.
 	fprintf(stdout, "      Writing LaTeX data: ");
-	exception = subsection_write_latex(subsection, file, algorithm);
+	exception = subsection_write_appendix_latex(subsection, file, algorithm);
 	if ( exception != NULL ) {
 		fprintf(stdout, "FAILED: %s", exception->message);
 	}
@@ -175,8 +159,8 @@ exception_t* subsection_write(subsection_t* subsection, FILE* file, enum algorit
 }
 
 
-exception_t* subsection_write_csv(subsection_t* subsection, enum algorithm algorithm) {
-	char* function_name = "subsection_write_csv()";
+exception_t* subsection_write_appendix_csv(subsection_t* subsection, enum algorithm algorithm) {
+	char* function_name = "subsection_write_appendix_csv()";
 	exception_t* exception;
 
 	// Validate parameters.
@@ -186,14 +170,14 @@ exception_t* subsection_write_csv(subsection_t* subsection, enum algorithm algor
 
 	// Write encryption data.
 	fprintf(stdout, "Encryption. ");
-	exception = subsection_write_csv_file(subsection->data_encrypt, subsection->data_count, algorithm, subsection->mode, ENCRYPT);
+	exception = subsection_write_appendix_csv_file(&(subsection->data_encrypt), subsection->data_count, algorithm, subsection->mode, ENCRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 
 	// Write decryption data.
 	fprintf(stdout, "Decryption. ");
-	exception = subsection_write_csv_file(subsection->data_decrypt, subsection->data_count, algorithm, subsection->mode, DECRYPT);
+	exception = subsection_write_appendix_csv_file(&(subsection->data_decrypt), subsection->data_count, algorithm, subsection->mode, DECRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -203,8 +187,8 @@ exception_t* subsection_write_csv(subsection_t* subsection, enum algorithm algor
 }
 
 
-exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
-	char* function_name = "subsection_write_csv_file()";
+exception_t* subsection_write_appendix_csv_file(benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
+	char* function_name = "subsection_write_appendix_csv_file()";
 	exception_t* exception;
 	FILE* csv_file;
 	char algorithm_name[ALGORITHM_NAME_LENGTH];
@@ -267,9 +251,9 @@ exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, e
 
 	// Write data.
 	for ( i = 0; i < data_count; i++ ) {
-		fprintf(csv_file, "%i,%li.%09li", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
+		fprintf(csv_file, "%i,%li.%09li", i + 1, data->runs[i].time_elapsed.tv_sec, data->runs[i].time_elapsed.tv_nsec);
 		if ( mode == CUDA ) {
-			fprintf(csv_file, ",%" PRIuPTR, data[i].buffer_size);
+			fprintf(csv_file, ",%" PRIuPTR, data->runs[i].buffer_size);
 		}
 		fprintf(csv_file, "\n");
 	}
@@ -284,8 +268,8 @@ exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, e
 }
 
 
-exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum algorithm algorithm) {
-	char* function_name = "subsection_write_latex()";
+exception_t* subsection_write_appendix_latex(subsection_t* subsection, FILE* file, enum algorithm algorithm) {
+	char* function_name = "subsection_write_appendix_latex()";
 	exception_t* exception;
 	char mode_name[MODE_NAME_LENGTH];
 
@@ -308,14 +292,14 @@ exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum a
 
 	// Write encryption data.
 	fprintf(stdout, "Encryption. ");
-	exception = subsection_write_latex_data(file, subsection->data_encrypt, subsection->data_count, algorithm, subsection->mode, ENCRYPT);
+	exception = subsection_write_appendix_latex_data(file, &(subsection->data_encrypt), subsection->data_count, algorithm, subsection->mode, ENCRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 
 	// Write decryption data.
 	fprintf(stdout, "Decryption. ");
-	exception = subsection_write_latex_data(file, subsection->data_decrypt, subsection->data_count, algorithm, subsection->mode, DECRYPT);
+	exception = subsection_write_appendix_latex_data(file, &(subsection->data_decrypt), subsection->data_count, algorithm, subsection->mode, DECRYPT);
 	if (exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -325,8 +309,8 @@ exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum a
 }
 
 
-exception_t* subsection_write_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
-	char* function_name = "subsection_write_latex_data()";
+exception_t* subsection_write_appendix_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
+	char* function_name = "subsection_write_appendix_latex_data()";
 	exception_t* exception;
 
 	// Validate parameters.
@@ -338,31 +322,25 @@ exception_t* subsection_write_latex_data(FILE* file, benchmark_data_t* data, int
 	}
 
 	// Write the data table.
-	exception = subsection_write_latex_data_table(file, data, data_count, algorithm, mode, encryption);
+	exception = subsection_write_appendix_latex_data_table(file, data, data_count, algorithm, mode, encryption);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 	
 	// Write statistical data.
-	exception = subsection_write_latex_data_statistics(file, data, data_count);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
+	//exception = subsection_write_appendix_latex_data_statistics(file, data, data_count);
+	//if ( exception != NULL ) {
+	//	return exception_append(exception, function_name);
+	//}
 
 	// Return success.
 	return NULL;
 }
 
 
-exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count) {
-	char* function_name = "subsection_write_latex_data_statistics()";
+exception_t* subsection_write_appendix_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count) {
+	char* function_name = "subsection_write_appendix_latex_data_statistics()";
 	exception_t* exception;
-	const long NANOSECONDS_PER_SECOND = 1000000000;
-	double* times_elapsed;
-	double mean;
-	double standard_deviation;
-	double temp;
-	int i;
 
 	// Validate parameters.
 	if ( file == NULL ) {
@@ -381,34 +359,11 @@ exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t
 		return NULL;
 	}
 
-	// Allocate space for the data as double.
-	times_elapsed = (double*)malloc(sizeof(double) * data_count);
-	if ( times_elapsed == NULL ) {
-		return exception_throw("Unable to allocate double array.", function_name);
-	}
-
-	// Convert each bit of data into a double.
-	for ( i = 0; i < data_count; i++ ) {
-		temp = (double)data[i].time_elapsed.tv_nsec;
-		temp /= NANOSECONDS_PER_SECOND;
-		temp += (double)data[i].time_elapsed.tv_sec;
-		times_elapsed[i] = temp;
-	}
-
-	// Get the mean.
-	exception = statistics_mean_double(times_elapsed, data_count, &mean);
+	// Run the statistical analysis on the specified data.
+	exception = benchmark_data_analyze(data);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
-
-	// Get the standard deviation.
-	exception = statistics_standard_deviation_double(times_elapsed, data_count, &mean, &standard_deviation);
-	if ( exception != NULL ) {
-		return exception_append(exception, function_name);
-	}
-
-	// Free the double array.
-	free(times_elapsed);
 
 	// Print data in LaTeX.
 	fprintf(file, "The sample mean ($\\overline{x}$) and sample standard deviation ($s$) are:\n \
@@ -416,15 +371,15 @@ exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t
 		\\overline{x} & = & %f \\\\\n \
 		s & = & %f \n \
 		\\end{eqnarray*}\n",
-		mean, standard_deviation);
+		data->mean_sample, data->deviation);
 
 	// Return success.
 	return NULL;
 }
 
 
-exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
-	char* function_name = "subsection_write_latex_data_table()";
+exception_t* subsection_write_appendix_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption) {
+	char* function_name = "subsection_write_appendix_latex_data_table()";
 	exception_t* exception;
 	char algorithm_name[ALGORITHM_NAME_LENGTH];
 	char mode_name[MODE_NAME_LENGTH];
@@ -483,9 +438,9 @@ exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* dat
 
 	// Print the data.
 	for ( i = 0; i < data_count; i++ ) {
-		fprintf(file, "%i & %li & %09li ", i + 1, data[i].time_elapsed.tv_sec, data[i].time_elapsed.tv_nsec);
+		fprintf(file, "%i & %li & %09li ", i + 1, data->runs[i].time_elapsed.tv_sec, data->runs[i].time_elapsed.tv_nsec);
 		if ( mode == CUDA ) { // Global memory used.
-			fprintf(file, "& %" PRIuPTR, data[i].buffer_size);
+			fprintf(file, "& %" PRIuPTR, data->runs[i].buffer_size);
 		}
 		fprintf(file, "\\\\\n");
 	}
@@ -493,6 +448,53 @@ exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* dat
 	// Print tabular and table tails.
 	fprintf(file, "\\hline\n \
 			\\end{tabular}\n\\end{figure}\n");
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* subsection_write_results_table_row(subsection_t* subsection, FILE* file, enum encryption encryption) {
+	char* function_name = "subsection_write_results()";
+	exception_t* exception;
+	benchmark_data_t* data;
+	char mode_name[MODE_NAME_LENGTH];
+
+	// Validate parameters.
+	#ifdef DEBUG_SUBSECTION
+	if ( subsection == NULL ) {
+		return exception_throw("subsection was NULL.", function_name);
+	}
+	if ( file == NULL ) {
+		return exception_throw("file was NULL.", function_name);
+	}
+	#endif
+
+	// Get either the encryption or decryption data.
+	if ( encryption == ENCRYPT ) {
+		data = &(subsection->data_encrypt);
+	}
+	else if ( encryption == DECRYPT ) {
+		data = &(subsection->data_decrypt);
+	}
+	else {
+		return exception_throw("Unexpected encryption value.", function_name);
+	}
+
+	// Get the mode name.
+	exception = mode_get_name(subsection->mode, mode_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Calculate statistics on the data.
+	exception = benchmark_data_analyze(data);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Write the table row.
+	fprintf(file, "%s & %f & %f & %f \\\\\n", mode_name, data->mean_sample, data->mean_harmonic, data->deviation);
 
 	// Return success.
 	return NULL;

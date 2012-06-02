@@ -9,6 +9,11 @@
 #define subsection_H
 
 
+#ifdef DEBUG
+#define DEBUG_SUBSECTION
+#endif
+
+
 #include <ctype.h>
 
 
@@ -27,9 +32,9 @@ typedef struct {
 	// The number of data entries.
 	int data_count;
 	// The data gathered during encryption.
-	benchmark_data_t* data_encrypt;
+	benchmark_data_t data_encrypt;
 	// The data gathered during decryption.
-	benchmark_data_t* data_decrypt;
+	benchmark_data_t data_decrypt;
 } subsection_t;
 
 
@@ -54,43 +59,49 @@ exception_t* subsection_free(subsection_t* subsection);
 /**	Write the specified subsection to the specified pre-opened and writable file.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write(subsection_t* subsection, FILE* file, enum algorithm algorithm);
+exception_t* subsection_write_appendix(subsection_t* subsection, FILE* file, enum algorithm algorithm);
 
 
-/**	Private function of subsection_write() for writing CSV output.
+/**	Private function of subsection_write_appendix() for writing CSV output.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_csv(subsection_t* subsection, enum algorithm algorithm);
+exception_t* subsection_write_appendix_csv(subsection_t* subsection, enum algorithm algorithm);
 
 
-/**	Private function of subsection_write_csv() for writing a single CSV file.
+/**	Private function of subsection_write_appendix_csv() for writing a single CSV file.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_csv_file(benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+exception_t* subsection_write_appendix_csv_file(benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
 
 
-/**	Private function of subsection_write() for writing the LaTeX output.
+/**	Private function of subsection_write_appendix() for writing the LaTeX output.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_latex(subsection_t* subsection, FILE* file, enum algorithm algorithm);
+exception_t* subsection_write_appendix_latex(subsection_t* subsection, FILE* file, enum algorithm algorithm);
 
 
-/**	Private function of subsection_write_latex() that writes part of the subsection data in LaTeX.
+/**	Private function of subsection_write_appendix_latex() that writes part of the subsection data in LaTeX.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+exception_t* subsection_write_appendix_latex_data(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
 
 
-/**	Private function of subsection_write_latex_data() that writes statistical information in LaTeX.
+/**	DEPRECATED. Private function of subsection_write_appendix_latex_data() that writes statistical information in LaTeX.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count);
+exception_t* subsection_write_appendix_latex_data_statistics(FILE* file, benchmark_data_t* data, int data_count);
 
 
-/**	Private function of subsection_write_latex_data() for writing data tables in LaTeX.
+/**	Private function of subsection_write_appendix_latex_data() for writing data tables in LaTeX.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+exception_t* subsection_write_appendix_latex_data_table(FILE* file, benchmark_data_t* data, int data_count, enum algorithm algorithm, enum mode mode, enum encryption encryption);
+
+
+/**	Write either the encryption or decryption summary results as a LaTeX tabular row.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* subsection_write_results_table_row(subsection_t* subsection, FILE* file, enum encryption encryption);
 
 
 #endif // subsection_H

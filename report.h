@@ -12,6 +12,11 @@
 #define report_H
 
 
+#ifdef DEBUG
+#define DEBUG_REPORT
+#endif
+
+
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -85,6 +90,12 @@ exception_t* report_free(report_t* report);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write(report_t* report);
+
+
+/**	Private function of report_write() that writes the appendix of the report.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_appendix(report_t* report);
 
 
 /**	Private function of report_write() that compiles a LaTeX document.

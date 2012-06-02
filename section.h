@@ -58,10 +58,22 @@ exception_t* section_init(section_t* section, int data_count, enum algorithm alg
 exception_t* section_free(section_t* section);
 
 
-/**	Write the specified section_t to the specified pre-opened and writable file.
+/**	Write the appendix data of specified section_t to the specified pre-opened and writable file.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* section_write(section_t* section, FILE* file);
+exception_t* section_write_appendix(section_t* section, FILE* file);
+
+
+/**	Write the results of the specified section_t* to the specified file.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* section_write_results(section_t* section, FILE* file);
+
+
+/**	Write the results table for either the encrypt or decrypt version from the specified section.
+ *	@return	NULL on success, exception-t* on failure.
+ */
+exception_t* section_write_results_table(section_t* section, FILE* file, enum encryption encryption);
 
 
 #endif // section_H

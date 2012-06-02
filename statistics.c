@@ -1,7 +1,42 @@
 #include "statistics.h"
 
 
-exception_t* statistics_mean_double(double* values, int value_count, double* mean_output) {
+exception_t* statistics_mean_harmonic_double(double* values, int value_count, double* mean_output) {
+	#ifdef DEBUG_STATISTICS
+	char* function_name = "statistics_mean_harmonic_double()";
+	#endif
+	double mean;
+	int i;
+
+	// Validate
+	#ifdef DEBUG_STATISTICS
+	if ( vlaues == NULL ) {
+		return exception_throw("values was NULL.", function_name);
+	}
+	else if ( value_count < 1 ) {
+		return exception_throw("value_count was less than 1.", function_name);
+	}
+	else if ( mean_output == NULL ) {
+		return exception_throw("mean_output was NULL.", function_name);
+	}
+	#endif
+
+	// Calculate the mean.
+	mean = 0.0f;
+	for ( i = 0; i < value_count; i++ ) {
+		mean += (1 / values[i]);
+	}
+	mean = ((double)value_count) / mean;
+
+	// Assign output parameters.
+	(*mean_output) = mean;
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* statistics_mean_sample_double(double* values, int value_count, double* mean_output) {
 	char* function_name = "statistics_mean_double()";
 	double mean;
 	int i;
@@ -53,7 +88,7 @@ exception_t* statistics_standard_deviation_double(double* values, int value_coun
 
 	// Calculate the mean.
 	if ( mean_optional == NULL ) {
-		exception = statistics_mean_double(values, value_count, &mean);
+		exception = statistics_mean_sample_double(values, value_count, &mean);
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
