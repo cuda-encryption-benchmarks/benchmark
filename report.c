@@ -550,6 +550,13 @@ exception_t* report_write_methodologies(report_t* report) {
 		"Benchmarking times are measured using the \\verb'clock_getres()' function. " \
 		"Note that the accuracy of this method may be system-dependent.\n");
 
+	// Write the harmonic mean.
+	fprintf(report->file, "\\subsection{Harmonic Mean}\n" \
+		"The harmonic mean $H$ is calculated by the following standard procedure:\n" \
+		"\\begin{eqnarray*}\n" \
+		"H & = & \\frac{n}{\\frac{1}{x_1} + \\frac{1}{x_2} + \\cdots + \\frac{1}{x_n}}\n" \
+		"\\end{eqnarray*}\n");
+
 	// Write parallelization (Open MP).
 	fprintf(report->file,"\\subsection{Parallelization}\n" \
 		"The method used for parallelization of the algorithms is OpenMP. " \
@@ -569,6 +576,13 @@ exception_t* report_write_methodologies(report_t* report) {
 		"loss of precision, which should be negligible in all but extreme cases " \
 		"(such as having a value which is orders of magnitude larger than the others, " \
 		" or millions of iterations).\n");
+
+	// Write the sample mean
+	fprintf(report->file, "\\subsection{Sample Mean}\n" \
+		"The sample mean is calculated by the standard formula:\n" \
+		"\\begin{eqnarray*}\n" \
+		"\\overline{x} & = & \\frac{1}{N} \\sum_{i = 1}^{N} x_{i}\n" \
+		"\\end{eqnarray*}\n");
 
 	// Return success.
 	return NULL;

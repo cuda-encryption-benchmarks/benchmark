@@ -126,8 +126,13 @@ int cuda_device_properties_report_write(FILE* file, int device_number) {
 		device_properties.maxTexture1DLayered[0], device_properties.maxTexture1DLayered[1],
 		device_properties.maxTexture2DLayered[0], device_properties.maxTexture2DLayered[1], device_properties.maxTexture2DLayered[2]);
 	#endif
+	#if defined (__LP64__) || defined(_LP64)
+	fprintf(file, "Constant Memory & %lu bytes \\\\\\hline\n", device_properties.totalConstMem);
+	fprintf(file, "Shared Memory per Block & %lu bytes \\\\\\hline\n", device_properties.sharedMemPerBlock);
+	#else
 	fprintf(file, "Constant Memory & %u bytes \\\\\\hline\n", device_properties.totalConstMem);
 	fprintf(file, "Shared Memory per Block & %u bytes \\\\\\hline\n", device_properties.sharedMemPerBlock);
+	#endif
 	fprintf(file, "Registers per Block & %i \\\\\\hline\n", device_properties.regsPerBlock);
 	fprintf(file, "Warp size & %i \\\\\\hline\n", device_properties.warpSize);
 	fprintf(file, "Maximum number of threads per block & %i \\\\\\hline\n", device_properties.maxThreadsPerBlock);
@@ -135,8 +140,13 @@ int cuda_device_properties_report_write(FILE* file, int device_number) {
 		device_properties.maxThreadsDim[0], device_properties.maxThreadsDim[1], device_properties.maxThreadsDim[2]);
 	fprintf(file, "Maximum sizes of each dimension of a grid & %i x %i x %i \\\\\\hline\n",
 		device_properties.maxGridSize[0], device_properties.maxGridSize[1], device_properties.maxGridSize[2]);
+	#if defined (__LP64__) || defined(_LP64)
+	fprintf(file, "Maximum memory pitch & %lu bytes \\\\\\hline\n", device_properties.memPitch);
+	fprintf(file, "Texture alignment & %lu bytes \\\\\\hline\n", device_properties.textureAlignment);
+	#else
 	fprintf(file, "Maximum memory pitch & %u bytes \\\\\\hline\n", device_properties.memPitch);
 	fprintf(file, "Texture alignment & %u bytes \\\\\\hline\n", device_properties.textureAlignment);
+	#endif
 	#if CUDART_VERSION >= 4000
 	fprintf(file, "Concurrent copy and execution & %s with %i copy engine(s) \\\\\\hline\n",
 		(device_properties.deviceOverlap ? "Yes" : "No"), device_properties.asyncEngineCount);

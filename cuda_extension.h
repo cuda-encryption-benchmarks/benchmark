@@ -3,6 +3,7 @@
 
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "block128.h"
 
