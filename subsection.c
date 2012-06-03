@@ -47,6 +47,16 @@ exception_t* subsection_execute(subsection_t* subsection, key256_t* key, char* i
 		fprintf(stdout, "\n");
 	}
 
+	// Analyze the results.
+	exception = benchmark_data_analyze(&(subsection->data_encrypt));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+	exception = benchmark_data_analyze(&(subsection->data_decrypt));
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
 	// Return success.
 	fprintf(stdout, "    Subsection \"%s\" execution completed successfully.\n", mode_name);
 	return NULL;
@@ -454,11 +464,12 @@ exception_t* subsection_write_appendix_latex_data_table(FILE* file, benchmark_da
 }
 
 
-exception_t* subsection_write_results_table_row(subsection_t* subsection, FILE* file, enum encryption encryption) {
-	char* function_name = "subsection_write_results()";
+exception_t* subsection_write_results_summary_table_row(subsection_t* subsection, FILE* file, off_t size, enum encryption encryption) {
+	char* function_name = "subsection_write_results_summary_table_row()";
 	exception_t* exception;
 	benchmark_data_t* data;
 	char mode_name[MODE_NAME_LENGTH];
+	long long blocks_per_second;
 
 	// Validate parameters.
 	#ifdef DEBUG_SUBSECTION
@@ -494,7 +505,8 @@ exception_t* subsection_write_results_table_row(subsection_t* subsection, FILE* 
 	}
 
 	// Write the table row.
-	fprintf(file, "%s & %f & %f & %f \\\\\n", mode_name, data->mean_sample, data->mean_harmonic, data->deviation);
+	blocks_per_second = (long long)((size / data->mean_sample) / BYTES_PER_BLOCK128);
+	fprintf(file, "%s & %lli & %lli & %lli \\\\\n", mode_name, blocks_per_second, (long long)((size / data->mean_harmonic) / BYTES_PER_BLOCK128), (long long)((data->deviation / data->mean_sample) * (blocks_per_second)));
 
 	// Return success.
 	return NULL;

@@ -101,7 +101,7 @@ exception_t* subsection_write_appendix_latex_data_table(FILE* file, benchmark_da
 /**	Write either the encryption or decryption summary results as a LaTeX tabular row.
  *	@return	NULL on success, exception_t* on failure.
  */
-exception_t* subsection_write_results_table_row(subsection_t* subsection, FILE* file, enum encryption encryption);
+exception_t* subsection_write_results_summary_table_row(subsection_t* subsection, FILE* file, off_t size, enum encryption encryption);
 
 
 #endif // subsection_H

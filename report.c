@@ -528,7 +528,7 @@ exception_t* report_write_methodologies(report_t* report) {
 		"eliminates disk I/O as a factor of uncertainty in the benchmarking time.\n");
 
 	// Write clock resolution using clock_getres().
-        fprintf(report->file, "\\subsection{Clock Resolution}\n" \
+	fprintf(report->file, "\\subsection{Clock Resolution}\n" \
 		"Benchmarking times are measured using the \\verb'clock_getres()' function. " \
 		"Note that the accuracy of this method may be system-dependent.\n");
 
@@ -592,11 +592,15 @@ exception_t* report_write_results(report_t* report) {
 		"%" PRIuMAX " bytes\n" \
 		"\\end{verbatim}\n", report->stats.st_size);
 
-	// TODO: Write total gains.
+	// Write total gains.
+	exception = report_write_results_gain(report);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
 
 	// Write results from each section.
 	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
-		exception = section_write_results(&(report->sections[i]), report->file);
+		exception = section_write_results_summary(&(report->sections[i]), report->file, report->stats.st_size);
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}
@@ -609,6 +613,8 @@ exception_t* report_write_results(report_t* report) {
 
 exception_t* report_write_results_gain(report_t* report) {
 	char* function_name = "report_write_results_gain()";
+	exception_t* exception;
+	int i;
 
 	// Validate parameters.
 	#ifdef DEBUG_REPORT
@@ -620,8 +626,30 @@ exception_t* report_write_results_gain(report_t* report) {
 	// Write the gain header.
 	fprintf(report->file, "\\subsection{Gains}\n");
 
-	// Return not implemented.
-	return exception_throw("Not implemented.", function_name);
+	// Write gain explaination.
+	fprintf(report->file,"Gain ``speeds'' are measured by number of 128-bit blocks-per-second. The gains are relative to the serial mode.\n");
+
+	// Write the table head.
+	fprintf(report->file, "\\begin{figure}[H]\n" \
+		"\\caption{Overall Gains}\n\\centering\n");
+
+	// Write the tabular head.
+	fprintf(report->file, "\\begin{tabular}[c]{|c|c|c|c|c|c|}\n" \
+		"Algorithm & Serial Times & Parallel Speed & CUDA Speed & Parallel Speed & CUDA Gains\\\\\n\\hline\n");
+
+	// Write tabular rows from each section.
+	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
+		exception = section_write_results_gain(&(report->sections[i]), report->file, report->stats.st_size);
+		if ( exception != NULL ) {
+			return exception_append(exception, function_name);
+		}
+	}
+
+	// Write the tabular and table tails.
+	fprintf(report->file, "\\hline\\end{tabular}\n\\end{figure}\n");
+
+	// Return success.
+	return NULL;
 }
 
 
@@ -641,15 +669,15 @@ exception_t* report_write_system_information(report_t* report) {
 	// Write clock resolution.
 	fprintf(report->file, "\\subsection{Clock Resolution}\n" \
 		"The resolution of this clock is:\n\\begin{verbatim}\n");
-        if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
-                fprintf(report->file, "Unknown");
+	if ( clock_getres(CLOCK_REALTIME, &timespec) == -1 ) {
+		fprintf(report->file, "Unknown");
 		fprintf(stdout, "ERROR getting clock resolution: ");
-                fflush(stdout);
-                perror(NULL);
-        }
-        else {
-                fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
-        }
+		fflush(stdout);
+		perror(NULL);
+	}
+	else {
+		fprintf(report->file, "%li nanosecond(s)", timespec.tv_nsec );
+	}
 	fprintf(report->file,"\n\\end{verbatim}\n\n");
 
 	// Write CUDA devices

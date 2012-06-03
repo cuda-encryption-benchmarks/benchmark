@@ -157,8 +157,8 @@ exception_t* section_write_appendix(section_t* section, FILE* file) {
 }
 
 
-exception_t* section_write_results(section_t* section, FILE* file) {
-	char* function_name = "section_write_results()";
+exception_t* section_write_results_summary(section_t* section, FILE* file, off_t size) {
+	char* function_name = "section_write_results_summary()";
 	exception_t* exception;
 	char algorithm_name[ALGORITHM_NAME_LENGTH];
 
@@ -182,13 +182,13 @@ exception_t* section_write_results(section_t* section, FILE* file) {
 	fprintf(file, "\\subsection{%s}\n", algorithm_name);
 
 	// Write the encryption results.
-	exception = section_write_results_table(section, file, ENCRYPT);
+	exception = section_write_results_summary_table(section, file, size, ENCRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
 
 	// Write the decryption results.
-	exception = section_write_results_table(section, file, DECRYPT);
+	exception = section_write_results_summary_table(section, file, size, DECRYPT);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -198,8 +198,72 @@ exception_t* section_write_results(section_t* section, FILE* file) {
 }
 
 
-exception_t* section_write_results_table(section_t* section, FILE* file, enum encryption encryption) {
-	char* function_name = "section_write_results_table()";
+exception_t* section_write_results_gain(section_t* section, FILE* file, off_t size) {
+	char* function_name = "section_write_results_gain()";
+	exception_t* exception;
+	char algorithm_name[ALGORITHM_NAME_LENGTH];
+	char encryption_name[ENCRYPTION_NAME_LENGTH];
+	long long blocks_per_second_serial;
+	long long blocks_per_second_parallel;
+	long long blocks_per_second_cuda;
+	double gain_parallel;
+	double gain_cuda;
+
+	// Validate parameters.
+	#ifdef DEBUG_SECTION
+	if ( section == NULL ) {
+		return exception_throw("section was NULL.", function_name);
+	}
+	else if ( file == NULL ) {
+		return exception_throw("file was NULL.", function_name);
+	}
+	#endif
+
+	// Get the algorithm name.
+	exception = algorithm_get_name(section->algorithm, algorithm_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Get the name for encryption.
+	exception = encryption_get_name(ENCRYPT, encryption_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Calculate encryption speeds and gain.
+	blocks_per_second_serial = (size / section->subsections[SECTION_SUBSECTION_SERIAL].data_encrypt.mean_sample) / BYTES_PER_BLOCK128;
+	blocks_per_second_parallel = (size / section->subsections[SECTION_SUBSECTION_PARALLEL].data_encrypt.mean_sample) / BYTES_PER_BLOCK128;
+	blocks_per_second_cuda = (size / section->subsections[SECTION_SUBSECTION_CUDA].data_encrypt.mean_sample) / BYTES_PER_BLOCK128;
+	gain_parallel = ((double)blocks_per_second_parallel) / ((double)blocks_per_second_serial);
+	gain_cuda = ((double)blocks_per_second_cuda) / ((double)blocks_per_second_serial);
+	
+	// Write the encryption speed and gains.
+	fprintf(file, "%s %s & %lli & %lli & %lli & %f & %f\\\\\n", algorithm_name, encryption_name, blocks_per_second_serial, blocks_per_second_parallel, blocks_per_second_cuda, gain_parallel, gain_cuda);
+
+	// Get the name for decryption.
+	exception = encryption_get_name(DECRYPT, encryption_name);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Calculate decryption speeds and gain.
+	blocks_per_second_serial = (size / section->subsections[SECTION_SUBSECTION_SERIAL].data_decrypt.mean_sample) / BYTES_PER_BLOCK128;
+	blocks_per_second_parallel = (size / section->subsections[SECTION_SUBSECTION_PARALLEL].data_decrypt.mean_sample) / BYTES_PER_BLOCK128;
+	blocks_per_second_cuda = (size / section->subsections[SECTION_SUBSECTION_CUDA].data_decrypt.mean_sample) / BYTES_PER_BLOCK128;
+	gain_parallel = ((double)blocks_per_second_parallel) / ((double)blocks_per_second_serial);
+	gain_cuda = ((double)blocks_per_second_cuda) / ((double)blocks_per_second_serial);
+
+	// Write the decryption speed and gains.
+	fprintf(file, "%s %s & %lli & %lli & %lli & %f & %f\\\\\n", algorithm_name, encryption_name, blocks_per_second_serial, blocks_per_second_parallel, blocks_per_second_cuda, gain_parallel, gain_cuda);
+
+	// Return success.
+	return NULL;
+}
+
+
+exception_t* section_write_results_summary_table(section_t* section, FILE* file, off_t size, enum encryption encryption) {
+	char* function_name = "section_write_results_summary_table()";
 	exception_t* exception;
 	char algorithm_name[ALGORITHM_NAME_LENGTH];
         char encryption_name[ENCRYPTION_NAME_LENGTH];
@@ -236,7 +300,7 @@ exception_t* section_write_results_table(section_t* section, FILE* file, enum en
 
         // Print each row of data.
 	for ( i = 0; i < SECTION_SUBSECTION_COUNT; i++ ) {
-		exception = subsection_write_results_table_row(&(section->subsections[i]), file, encryption);
+		exception = subsection_write_results_summary_table_row(&(section->subsections[i]), file, size, encryption);
 		if ( exception != NULL ) {
 			return exception_append(exception, function_name);
 		}

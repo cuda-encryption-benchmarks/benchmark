@@ -9,6 +9,9 @@
 #include "ccc/ccc.h"
 
 
+#define BYTES_PER_BLOCK128 16
+
+
 // Structure to hold a 128-bit binary stream.
 typedef struct {
 	// The first 32 btis of data.
