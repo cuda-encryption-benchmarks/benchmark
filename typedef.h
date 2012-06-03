@@ -2,6 +2,10 @@
 #define typedef_H
 
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "algorithm.h"
 #include "ccc/ccc.h"
 #include "encryption.h"
@@ -25,6 +29,13 @@ exception_t* arguments_parse(char* argv[], int* data_count);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* arguments_parse_data_count(char* argument, int* data_count);
+
+
+/**	Parse the input filepath to make sure the file exists and is not a directory.
+ *	Admittedly this is not _technically_ parsing.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* arguments_parse_input_filepath(char* argument);
 
 
 /**	Validate user-supplied arguments.

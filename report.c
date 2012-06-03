@@ -65,6 +65,11 @@ exception_t* report_init(report_t* report, char* input_filepath, int data_count)
 		return exception_append(exception, function_name);
 	}
 
+	// Get the file stats.
+	if ( stat64(input_filepath, &(report->stats)) == -1 ) { // File exists.
+		return exception_throw("Unable to get file stats.", function_name);
+	}
+
 	// Open the report file.
 	filepath[0] = '\0';
 	strcat(filepath, report->basepath);
@@ -298,7 +303,6 @@ exception_t* report_write(report_t* report) {
 exception_t* report_write_appendix(report_t* report) {
 	char* function_name = "report_write_appendix()";
 	exception_t* exception;
-	struct stat64 stats;
 	int i;
 
 	// Validate parameters.
@@ -308,28 +312,6 @@ exception_t* report_write_appendix(report_t* report) {
 
 	// Write results section header.
 	fprintf(report->file, "\\section{Appendix}\n");
-
-	// Write file statistics.
-	fprintf(report->file, "The following results were generated from " \
-		"a file of size:\n\\begin{verbatim}\n");
-	if ( chdir("../../") == -1 ) { // Move back to get the file stats... (Okay, this is a bit of a poor hack :/ )
-		fprintf(report->file, "Unknown");
-	}
-	else {
-		// Get file stats.
-		if ( lstat64(report->input_filepath, &stats) == -1 ) {
-			fprintf(report->file, "Unknown");
-		}
-		else {
-			fprintf(report->file, "%" PRIuMAX " bytes", stats.st_size);
-		}
-
-		// Move back into report directory.
-		if ( chdir(report->basepath) == -1 ) {
-			return exception_throw("Unable to move back into report directory.", function_name);
-		}
-	}
-	fprintf(report->file, "\n\\end{verbatim}\n");
 
 	// Write each section of the report.
 	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {
@@ -600,9 +582,15 @@ exception_t* report_write_results(report_t* report) {
 		return exception_throw("report was NULL.", function_name);
 	}
 	#endif
-
+	
 	// Write results header.
 	fprintf(report->file, "\\section{Results}\n");
+
+	// Write file size.
+	fprintf(report->file, "The following results were generated from " \
+		"a file of size:\n\\begin{verbatim}\n" \
+		"%" PRIuMAX " bytes\n" \
+		"\\end{verbatim}\n", report->stats.st_size);
 
 	// TODO: Write total gains.
 
@@ -616,6 +604,24 @@ exception_t* report_write_results(report_t* report) {
 
 	// Return success.
 	return NULL;
+}
+
+
+exception_t* report_write_results_gain(report_t* report) {
+	char* function_name = "report_write_results_gain()";
+
+	// Validate parameters.
+	#ifdef DEBUG_REPORT
+	if ( report == NULL ) {
+		return exception_throw("report was NULL.", function_name);
+	}
+	#endif
+
+	// Write the gain header.
+	fprintf(report->file, "\\subsection{Gains}\n");
+
+	// Return not implemented.
+	return exception_throw("Not implemented.", function_name);
 }
 
 

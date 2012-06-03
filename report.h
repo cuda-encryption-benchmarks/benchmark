@@ -54,6 +54,8 @@ typedef struct {
 	char basepath[REPORT_BASEPATH_LENGTH_MAX];
 	// The filepath for the file to benchmark.
 	char* input_filepath;
+	// The stats for the input file.
+	struct stat64 stats;
 	// The name of the report without a file extension.
 	char filename[REPORT_FILENAME_LENGTH_MAX];
 } report_t;
@@ -114,6 +116,12 @@ exception_t* report_write_methodologies(report_t* report);
  *	@return	NULL on success, exception_t* on failure.
  */
 exception_t* report_write_results(report_t* report);
+
+
+/**	Private function of report_write_results() that writes the gains between the algorithms.
+ *	@return	NULL on success, exception_t* on failure.
+ */
+exception_t* report_write_results_gain(report_t* report);
 
 
 /**	Private function of report_write() that appends system information to the report.

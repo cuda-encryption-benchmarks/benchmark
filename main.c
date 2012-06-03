@@ -1,6 +1,13 @@
 
-// Macro to allow clock_getres() and related functions.
+// Macro to allow clock_getres() and related functionality.
+#ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309L
+#endif
+// Open large files.
+#define _LARGEFILE64_SOURCE
+// For lstat()
+#define _BSD_SOURCE
+
 
 #include <errno.h>
 #include <fcntl.h>
@@ -42,8 +49,14 @@ exception_t* arguments_parse(char* argv[], int* data_count) {
 		return exception_throw("data_count was NULL.", function_name);
 	}
 	
-	// Parse the arguments.
+	// Parse the data count.
 	exception = arguments_parse_data_count(argv[1], data_count);
+	if ( exception != NULL ) {
+		return exception_append(exception, function_name);
+	}
+
+	// Check that the file exists
+	exception = arguments_parse_input_filepath(argv[2]);
 	if ( exception != NULL ) {
 		return exception_append(exception, function_name);
 	}
@@ -79,6 +92,37 @@ exception_t* arguments_parse_data_count(char* argument, int* data_count) {
 }
 
 
+exception_t* arguments_parse_input_filepath(char* argument) {
+	char* function_name = "arguments_parse_input_filepath()";
+	struct stat stats;
+
+	// Validate parameters.
+	if ( argument == NULL ) {
+		return exception_throw("argument was NULL.", function_name);
+	}
+
+	// Check that the file exists.
+        if ( stat(argument, &stats) == 0 ) { // File exists.
+                // Check if the file is a directory.
+                if ( S_ISDIR(stats.st_mode) ) {
+                        return exception_throw("The specified file is a directory.", function_name);
+                }
+        }
+        else { // Stat failed.
+                if ( errno == ENOENT ) { // File does not exist.
+                        return exception_throw("The specified file does not exist.", function_name);
+                }
+                else { // Any other error.
+                        perror(NULL);
+                        return exception_throw("Unexpected error when getting file stats.", function_name);
+                }
+        }
+
+	// Return success.
+	return NULL;
+}
+
+
 void print_usage(char* message) {
 	// Print usage message.
 	fprintf(stdout, "\a\nERROR: %s\n\n", message);
@@ -105,13 +149,11 @@ int main( int argc, char* argv[] ) {
 	// Parse the arguments.
 	exception = arguments_parse(argv, &data_count);
 	if ( exception != NULL ) {
-		exception_catch(exception);
-		exit(EXIT_FAILURE);
+		print_usage(exception->message);
 	}
 
-	fprintf(stdout, "Beginning automatic report generation.\n");
-
 	// Initialize the report.
+	fprintf(stdout, "Beginning automatic report generation.\n");
 	status = EXIT_SUCCESS;
 	exception = report_init(&report, argv[2], data_count);
 	if ( exception != NULL ) {
