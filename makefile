@@ -5,7 +5,6 @@ cflags = -fopenmp --pedantic-errors -Wall -Werror -std=c99
 libraries = -lccc -lcuda -lcudart -lgomp
 
 cfiles =	main \
-		aes \
 		algorithm \
 		benchmark \
 		benchmark_data \
