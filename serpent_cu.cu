@@ -10,7 +10,7 @@
 #endif
 
 
-// order of output from S-box functions
+//! order of output from S-box functions
 #define beforeS0(f) f(0,a,b,c,d,e)
 #define afterS0(f) f(1,b,e,c,a,d)
 #define afterS1(f) f(2,c,b,a,e,d)
@@ -21,7 +21,7 @@
 #define afterS6(f) f(7,a,c,d,b,e)
 #define afterS7(f) f(8,d,e,b,a,c)
 
-// order of output from inverse S-box functions
+//! order of output from inverse S-box functions
 #define beforeI7(f) f(8,a,b,c,d,e)
 #define afterI7(f) f(7,d,a,b,e,c)
 #define afterI6(f) f(6,a,b,c,e,d)
@@ -32,7 +32,7 @@
 #define afterI1(f) f(1,a,b,c,e,d)
 #define afterI0(f) f(0,a,d,b,e,c)
 
-// The linear transformation.
+//! The linear transformation.
 #define linear_transformation(i,a,b,c,d,e) {\
 	a = rotl_fixed(a, 13);   \
 	c = rotl_fixed(c, 3);    \
@@ -41,7 +41,7 @@
 	a = rotl_fixed(a ^ b ^ d, 5);       \
 	c = rotl_fixed(c ^ d ^ (b << 7), 22);}
 
-// The inverse linear transformation.
+//! The inverse linear transformation.
 #define inverse_linear_transformation(i,a,b,c,d,e)	{\
 	c = rotr_fixed(c, 22);   \
 	a = rotr_fixed(a, 5);    \
@@ -422,30 +422,31 @@
 	c ^= subkey[4 * r + 2]; \
 	d ^= subkey[4 * r + 3];}
 
-/**	Decrypt a single block on the device.
+/*!	\brief Decrypt a single block on the device.
  */
 __device__ void serpent_cuda_decrypt_block(block128_t* block, uint32_t* subkey);
 
 
-/**	Decrypt the specified array of blocks with the specified subkey through a CUDA thread.
+/*!	\brief Decrypt the specified array of blocks with the specified subkey through a CUDA thread.
  */
 __global__ void serpent_cuda_decrypt_blocks(block128_t* cuda_blocks);
 
 
-/**	Encrypt a single block on the device.
+/*!	\brief Encrypt a single block on the device.
  */
 __device__ void serpent_cuda_encrypt_block(block128_t* block, uint32_t* subkey);
 
 
-/**	Encrypt the specified array of blocks with the specified subkey through a CUDA thread.
+/*!	\brief Encrypt the specified array of blocks with the specified subkey through a CUDA thread.
  */
 __global__ void serpent_cuda_encrypt_blocks(block128_t* cuda_blocks);
 
 
-/**	Flip the bytes of the specified 32-bit unsigned integer.
- *	NOTE: Tried to make a global function for this but got
- *	"Error: External calls are not supported...".
- *	@return	A 32-bit unsigned integer with the bytes mirrored.
+/*!	\brief Flip the bytes of the specified 32-bit unsigned integer.
+ *	\note Tried to make a global function for this but got
+ *		"Error: External calls are not supported...".
+ *
+ *	\return	A 32-bit unsigned integer with the bytes mirrored.
  */
 __device__ uint32_t serpent_mirror_bytes32(uint32_t x);
 
@@ -453,11 +454,11 @@ __device__ uint32_t serpent_mirror_bytes32(uint32_t x);
 // Constant variables must be declared with a static scope...
 // Some variables are prefixed with the file name because of
 // "duplicate global variable looked up by string name" errors.
-// Array to hold the expanded serpent key.
+//! Array to hold the expanded serpent key.
 __device__ __constant__ uint32_t cuda_subkey[SUBKEY_LENGTH];
-// The total number of blocks being decrypted by a single CUDA thread.
+//! The total number of blocks being decrypted by a single CUDA thread.
 __device__ __constant__ int serpent_blocks_per_thread;
-// The total number of blocks being decrypted in the entire CUDA kernel.
+//! The total number of blocks being decrypted in the entire CUDA kernel.
 __device__ __constant__ int serpent_blocks_per_kernel;
 
 

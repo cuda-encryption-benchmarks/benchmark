@@ -6,30 +6,30 @@
 #include <cuda_runtime_api.h>
 
 
-/**     Decrypt a single block on the device.
+/*!     \brief Decrypt a single block on the device.
  */
 __device__ void twofish_cuda_decrypt_block(block128_t* block);
 
 
-/**     Decrypt the specified array of blocks through a CUDA kernel.
+/*!     \brief Decrypt the specified array of blocks through a CUDA kernel.
  */
 __global__ void twofish_cuda_decrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab);
 
 
-/**     Encrypt a single block on the device.
+/*!     \brief Encrypt a single block on the device.
  */
 __device__ void twofish_cuda_encrypt_block(block128_t* block);
 
 
-/**     Encrypt the specified array of blocks through a CUDA kernel.
+/*!     \brief Encrypt the specified array of blocks through a CUDA kernel.
  */
 __global__ void twofish_cuda_encrypt_blocks(block128_t* cuda_blocks, uint32_t* cuda_l_key, uint32_t* cuda_mk_tab);
 
 
-/**     Flip the bytes of the specified 32-bit unsigned integer.
- *      NOTE: Tried to make a global function for this but got
- *      "Error: External calls are not supported...".
- *      @return A 32-bit unsigned integer with the bytes mirrored.
+/*!     \brief Flip the bytes of the specified 32-bit unsigned integer.
+ *      \note Tried to make a global function for this but got
+ *	      "Error: External calls are not supported...".
+ *      \return A 32-bit unsigned integer with the bytes mirrored.
  */
 __device__ uint32_t twofish_mirror_bytes32(uint32_t x);
 
@@ -41,9 +41,9 @@ __shared__ uint32_t l_key[40];
 __shared__ uint32_t mk_tab[1024];
 
 // Constant variables in CUDA must be declared with a static scope.
-// The total number of blocks being decrypted by a single CUDA thread.
+//! The total number of blocks being decrypted by a single CUDA thread.
 __device__ __constant__ int twofish_blocks_per_thread;
-// The total number of blocks being decrypted in the entire CUDA kernel.
+//! The total number of blocks being decrypted in the entire CUDA kernel.
 __device__ __constant__ int twofish_blocks_per_kernel;
 
 

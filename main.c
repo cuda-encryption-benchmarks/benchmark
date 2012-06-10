@@ -1,11 +1,11 @@
 
-// Macro to allow clock_getres() and related functionality.
+//! Macro to allow clock_getres() and related functionality.
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 199309L
 #endif
-// Open large files.
+//! Open large files.
 #define _LARGEFILE64_SOURCE
-// For lstat()
+//! For lstat64().
 #define _BSD_SOURCE
 
 

@@ -6,8 +6,8 @@
 #include "block128.h"
 
 
-/**	Mirrors the bytes in the specified uint32_t.
- *	@return	A uint32_t with the bytes mirroted.
+/*!	\brief Mirrors the bytes of the specified uint32_t.
+ *	\return	A uint32_t with the bytes mirroed.
  */
 uint32_t mirror_bytes32(uint32_t x);
 

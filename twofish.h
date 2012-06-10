@@ -38,9 +38,6 @@
 #ifndef Twofish_H
 #define Twofish_H
 
-/* DEBUG ... because I am debugging! */
-#define DEBUG_TWOFISH
-
 #ifdef DEBUG
 #define DEBUG_TWOFISH
 #endif
@@ -58,28 +55,30 @@
 #include "typedef.h"
 
 
-// Percentage of global memory to subtract per iteration when trying to allocate
-// a memory buffer for blocks in CUDA.
+/*! \brief Percentage of global memory to subtract per iteration when trying to allocate
+ * a memory buffer for blocks in CUDA.
+ */
 #define TWOFISH_CUDA_MEMORY_MULTIPLIER 0.001
 
 
-// Rotate the bits in the specified number x left by the specified number n.
+//! Rotate the bits in the specified number x left by the specified number n.
 #define rotl_fixed(x, n)   (((x) << (n)) | ((x) >> (32 - (n))))
-// Rotate the bits in the specified number x right by the specified number n.
+//! Rotate the bits in the specified number x right by the specified number n.
 #define rotr_fixed(x, n)   (((x) >> (n)) | ((x) << (32 - (n))))
 
 
-// Structure that holds key-specific data that the Twofish algorithm uses.
-// This appears to be known in the Advanced Encryption Standard (AES)
-// submission as "The Key Schedule".
+/*! \brief Structure that holds key-specific data that the Twofish algorithm uses.
+ *  \note This appears to be known in the Advanced Encryption Standard (AES)
+ *	submission as "The Key Schedule".
+ */
 typedef struct {
-	// Appears to be the 40 words of the expanded key.
+	//! Appears to be the 40 words of the expanded key.
 	uint32_t l_key[40];
-	// Appears to be the 4 key-dependent S-boxes used in the 'g function'.
+	//! Appears to be the 4 key-dependent S-boxes used in the 'g function'.
 	uint32_t s_key[4];
-	// Appears to be another component derived from the key used in the algorithm.
+	//! Appears to be another component derived from the key used in the algorithm.
 	uint32_t mk_tab[4 * 256];
-	// Appears to be the key length as a multiple of 64 bits (rounded down).
+	//! Appears to be the key length as a multiple of 64 bits (rounded down).
 	uint32_t k_len;
 } twofish_instance_t;
 
@@ -192,27 +191,36 @@ void twofish_gen_mk_tab(twofish_instance_t* instance, uint32_t key[]);
 // END wall of Twofish definitions.
 
 
-/**	Run the specified array of 128-bit blocks through the twofish encryption algorithm.
- *	@out	buffer_size: Size of the global memory buffer used (only for CUDA).
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Run the specified array of 128-bit blocks through the Twofish encryption algorithm.
+ *
+ * 	\param[in]	user_key	The user-supplied key.
+ * 	\param[in]	blocks		The blocks to run through Twofish.
+ * 	\param[in]	block_count	The number of blocks in blocks.
+ * 	\param[in]	mode		How to run the Twofish algorithm.
+ * 	\param[in]	encryption	Whether to encrypt or decrypt the blocks.
+ *	\param[out]	buffer_size	Size of the global memory buffer used (only for CUDA).
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish(key256_t* user_key, block128_t* blocks, int block_count, enum mode mode, enum encryption encryption, size_t* buffer_size);
 
 
-/**	Decrypt the specified array of 128-bit blocks through the CUDA twofish algorithm.
- *	@return	NULL on success, exception_t* on failure.
+/*!	\brief Decrypt the specified array of 128-bit blocks through the CUDA twofish algorithm.
+ *
+ *	\return	NULL on success, exception_t* on failure.
  */
 exception_t* twofish_cuda_decrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
-/**	Encrypt the specified array of 128-bit blocks through the CUDA twofish algorithm.
- *	@return	NULL on success, exception_t* on failure.
+/*!	\brief Encrypt the specified array of 128-bit blocks through the CUDA twofish algorithm.
+ *
+ *	\return	NULL on success, exception_t* on failure.
  */
 exception_t* twofish_cuda_encrypt(key256_t* user_key, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
-/**	Private inner function to prevent linking errors because nvcc does not like external libraries.
- *	@return 0 on success, -1 on failure.
+/*!	\brief Private inner function to prevent linking errors with external libraries.
+ *
+ *	\return 0 on success, -1 on failure.
  */
 #ifdef __cplusplus
 extern "C"
@@ -220,8 +228,9 @@ extern "C"
 int twofish_cuda_decrypt_cu(twofish_instance_t* instance, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
-/**	Private inner function to prevent linking errors because nvcc does not like external libraries.
- *	@return 0 on success, -1 on failure.
+/*!	\brief Private inner function to prevent linking errors with external libraries.
+ *
+ *	\return 0 on success, -1 on failure.
  */
 #ifdef __cplusplus
 extern "C"
@@ -229,48 +238,54 @@ extern "C"
 int twofish_cuda_encrypt_cu(twofish_instance_t* instance, block128_t* blocks, int block_count, size_t* buffer_size);
 
 
-/**	Private function to decrypt a single block of twofish.
+/*!	\brief Private function to decrypt a single block of twofish.
  */
 void twofish_decrypt_block(block128_t* block, twofish_instance_t* instance);
 
 
-/**	Private function to encrypt a single block of twofish.
+/*!	\brief Private function to encrypt a single block of twofish.
  */
 void twofish_encrypt_block(block128_t* block, twofish_instance_t* instance);
 
 
-/**	Private function that generates the instance (key-specific data) for the twofish encryption algorithm.
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Private function that generates the instance (key-specific data) for the twofish encryption algorithm.
+ *
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish_instance_init(twofish_instance_t* instance, key256_t* user_key);
 
 
-/**	Debug function that pritns the twofish instance to stderr.
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Debug function that pritns the twofish instance to stderr.
+ *
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish_instance_print(twofish_instance_t* instance);
 
 
-/**	Decrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Decrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
+ *
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish_parallel_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
-/**	Encrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Encrypt the specified array of 128-bit blocks in parallel through the twofish encryption algorithm.
+ * 
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish_parallel_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
-/**	Decrypt the specified array of 128-bit blocks serially through the twofish encryption algorithm.
- *	@return NULL on success, exception_t* on failure.
+/*!	\brief Decrypt the specified array of 128-bit blocks serially through the twofish encryption algorithm.
+ *
+ *	\return NULL on success, exception_t* on failure.
  */
 exception_t* twofish_serial_decrypt(key256_t* user_key, block128_t* blocks, int block_count);
 
 
-/**	Encrypt the specified array of 128-bit blocks serially through the twofish encryption algorithm.
- *	@return	NULL on success, exception_t* on failure.
+/*!	\brief Encrypt the specified array of 128-bit blocks serially through the twofish encryption algorithm.
+ *
+ *	\return	NULL on success, exception_t* on failure.
  */
 exception_t* twofish_serial_encrypt(key256_t* user_key, block128_t* blocks, int block_count);
 

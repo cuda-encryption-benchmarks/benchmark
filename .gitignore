@@ -14,3 +14,5 @@ runs
 VERSION
 *.o
 TODO
+html
+latex
