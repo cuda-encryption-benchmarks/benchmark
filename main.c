@@ -14,7 +14,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "aes.h"
 #include "block128.h"
 #include "ccc/ccc.h"
 #include "file.h"

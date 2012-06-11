@@ -635,7 +635,7 @@ exception_t* report_write_results_gain(report_t* report) {
 
 	// Write the tabular head.
 	fprintf(report->file, "\\begin{tabular}[c]{|c|c|c|c|c|c|}\n" \
-		"Algorithm & Serial Times & Parallel Speed & CUDA Speed & Parallel Speed & CUDA Gains\\\\\n\\hline\n");
+		"Algorithm & Serial Speed & Parallel Speed & CUDA Speed & Parallel Speed & CUDA Gains\\\\\n\\hline\n");
 
 	// Write tabular rows from each section.
 	for ( i = 0; i < REPORT_SECTION_COUNT; i++ ) {

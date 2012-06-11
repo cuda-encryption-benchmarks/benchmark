@@ -71,7 +71,7 @@ exception_t* benchmark(key256_t* key, char* input_filepath, enum algorithm algor
 	// Call the algorithm.
 	switch(algorithm) {
 	case AES:
-		exception = aes(key, blocks, block_count, mode, encryption);
+		return exception_throw("Not implemented. Sorry!", function_name);
 		break;
 	case SERPENT:
 		exception = serpent(key, blocks, block_count, mode, encryption, &buffer_size);

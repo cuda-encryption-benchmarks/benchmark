@@ -9,7 +9,6 @@
 
 
 #include "ccc/ccc.h"
-#include "aes.h"
 #include "benchmark_data.h"
 #include "file.h"
 #include "key.h"
