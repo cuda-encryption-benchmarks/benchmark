@@ -1,8 +1,20 @@
-WARNING:
-This product has not yet been officially "released", is 
-currently undergoing heavy development, and may change
-dramatically without warning.
+This program is meant to benchmark NVIDIA's CUDA API. To invoke the program,
+type './benchmark <iteration count> <input file>' where '<iteration count>'
+is the number of times to run each benchmark and '<input file>' is a path 
+to file to benchmark. It may be necessary to add the shared object library
+'libccc.so.*' to the 'LD_LIBRARY_PATH' variable. In order to do this, type
+'env LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:./' as a prefix to the program
+invocation command. Please note that this program is for benchmarking
+purposes only and should not be used on unique data or in an attempt to 
+secure data.
 
-To run, invoke the "benchmark" executable generated. Make
-sure the proper drivers and library environment variables
-are set. More details may be found at NVIDIA's CUDA webpage.
+As this program makes use of the CUDA API, it will be necessary to have a
+CUDA-capable device installed on the host computer. It will also be necessary
+to be running the appropriate graphics driver and have any necessary
+environment variables set up. These tasks are beyond the scope of this
+README file; please refer to NVIDIA's website for help getting CUDA setup
+on your machine.
+
+This program was implemented as part of Oregon State University's Computer
+Science Capstone Project (also referred to as "Senior Design"). The final
+write-up for this project may be found under 'doc/final_report.pdf'.

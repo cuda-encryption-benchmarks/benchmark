@@ -1,0 +1,6 @@
+The program may be built using the following command:
+
+	make
+
+The build process requires the 'nvcc' compiler to be appropriately
+compiled; see NVIDIA's website for details.

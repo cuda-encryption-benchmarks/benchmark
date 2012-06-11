@@ -1,0 +1,8 @@
+- Move encryption and decryption data next to each other.
+- Add seconds data.
+- Clean up blocks per second display.
+- Add buffer and kernel invocation attempts.
+- Automate graphing.
+- Automatically calculate confidence intervals
+- Refactor structure to treat encrypt and decrypt as separate algorithms.
+- Add better interface to dynamically add sections/modes

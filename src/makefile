@@ -26,9 +26,9 @@ cufiles = 	cuda_extension \
 		
 
 # Version information.
-major_number = 0
-minor_number = 1
-release_number = 3
+major_number = 1
+minor_number = 0
+release_number = 0
 version = ${major_number}.${minor_number}.${release_number}
 
 # Binary name.
